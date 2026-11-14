@@ -64,4 +64,18 @@ public class ItemCollectorMod {
                 .limit(5)
                 .forEach(id -> LOGGER.info("  -> Found mod item: {}", id));
     }
+    // Optional JSON export
+    try {
+        var json = new com.google.gson.JsonObject();
+        for (var entry : ALL_ITEMS.entrySet()) {
+            json.addProperty(entry.getKey().toString(), entry.getValue().getDescriptionId());
+        }
+        var path = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().resolve("itemcollector_items.json");
+        try (var writer = java.nio.file.Files.newBufferedWriter(path)) {
+            new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(json, writer);
+        }
+        LOGGER.info("[ItemCollector] Exported item list to {}", path);
+    } catch (Exception e) {
+        LOGGER.error("[ItemCollector] Export failed", e);
+    }
 }
