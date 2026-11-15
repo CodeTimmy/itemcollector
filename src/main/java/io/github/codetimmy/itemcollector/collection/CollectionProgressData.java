@@ -1,61 +1,87 @@
 package io.github.codetimmy.itemcollector.collection;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.*;
 
-/**
- * Persistent per-player collection progress.
- * <p>
- * Stored as {@code <world>/data/collection_progress.dat}.
- * Automatically loaded on server start and written back when {@link #setDirty()} is called.
- */
 public class CollectionProgressData extends SavedData {
 
-    /** UUID -> (Category -> Set of collected entry IDs) */
     private final Map<UUID, Map<CollectionCategory, Set<ResourceLocation>>> progress;
-
-    private static final Codec<Map<CollectionCategory, Set<ResourceLocation>>> CATEGORY_MAP_CODEC =
-            Codec.unboundedMap(
-                    Codec.STRING.xmap(CollectionCategory::valueOf, CollectionCategory::name),
-                    ResourceLocation.CODEC.listOf().xmap(HashSet::new, ArrayList::new)
-            );
-
-    public static final Codec<CollectionProgressData> CODEC =
-            RecordCodecBuilder.create(instance -> instance.group(
-                    Codec.unboundedMap(UUIDUtil.STRING_CODEC, CATEGORY_MAP_CODEC)
-                            .fieldOf("progress")
-                            .forGetter(data -> data.progress)
-            ).apply(instance, CollectionProgressData::new));
-
-    public static final SavedDataType<CollectionProgressData> TYPE = new SavedDataType<>(
-            "collection_progress",
-            CollectionProgressData::new,
-            CODEC
-    );
 
     public CollectionProgressData() {
         this.progress = new HashMap<>();
     }
 
-    private CollectionProgressData(Map<UUID, Map<CollectionCategory, Set<ResourceLocation>>> progress) {
-        this.progress = new HashMap<>(progress);
+    // ------------------------------------------------------------------
+    // Factory & Loading (1.21.1 API)
+    // ------------------------------------------------------------------
+
+    public static final SavedData.Factory<CollectionProgressData> FACTORY = new SavedData.Factory<>(
+            CollectionProgressData::new,
+            CollectionProgressData::load
+    );
+
+    private static CollectionProgressData load(CompoundTag tag, HolderLookup.Provider provider) {
+        CollectionProgressData data = new CollectionProgressData();
+        CompoundTag progressTag = tag.getCompound("progress");
+
+        for (String uuidStr : progressTag.getAllKeys()) {
+            try {
+                UUID uuid = UUID.fromString(uuidStr);
+                CompoundTag playerTag = progressTag.getCompound(uuidStr);
+                Map<CollectionCategory, Set<ResourceLocation>> catMap = new EnumMap<>(CollectionCategory.class);
+
+                for (String catName : playerTag.getAllKeys()) {
+                    try {
+                        CollectionCategory category = CollectionCategory.valueOf(catName);
+                        ListTag list = playerTag.getList(catName, Tag.TAG_STRING);
+                        Set<ResourceLocation> set = new HashSet<>();
+                        for (int i = 0; i < list.size(); i++) {
+                            set.add(ResourceLocation.parse(list.getString(i)));
+                        }
+                        catMap.put(category, set);
+                    } catch (IllegalArgumentException ignored) {}
+                }
+                data.progress.put(uuid, catMap);
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return data;
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+        CompoundTag progressTag = new CompoundTag();
+
+        for (var playerEntry : progress.entrySet()) {
+            CompoundTag playerTag = new CompoundTag();
+            for (var catEntry : playerEntry.getValue().entrySet()) {
+                ListTag list = new ListTag();
+                for (ResourceLocation id : catEntry.getValue()) {
+                    list.add(StringTag.valueOf(id.toString()));
+                }
+                playerTag.put(catEntry.getKey().name(), list);
+            }
+            progressTag.put(playerEntry.getKey().toString(), playerTag);
+        }
+
+        tag.put("progress", progressTag);
+        return tag;
     }
 
     // ------------------------------------------------------------------
     // Access
     // ------------------------------------------------------------------
 
-    /** Returns the data attached to the Overworld, creating it if absent. */
     public static CollectionProgressData get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(TYPE, "collection_progress");
+                .computeIfAbsent(FACTORY, "collection_progress");
     }
 
     public boolean isCollected(UUID playerId, CollectionCategory category, ResourceLocation entryId) {
@@ -75,10 +101,6 @@ public class CollectionProgressData extends SavedData {
     // Mutation
     // ------------------------------------------------------------------
 
-    /**
-     * Marks an entry as collected for the given player.
-     * @return {@code true} if this is a new entry (not previously collected).
-     */
     public boolean markCollected(UUID playerId, CollectionCategory category, ResourceLocation entryId) {
         boolean added = progress
                 .computeIfAbsent(playerId, k -> new EnumMap<>(CollectionCategory.class))
