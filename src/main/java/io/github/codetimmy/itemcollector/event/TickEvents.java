@@ -3,7 +3,7 @@ package io.github.codetimmy.itemcollector.event;
 import io.github.codetimmy.itemcollector.ItemCollectorMod;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import io.github.codetimmy.itemcollector.collection.CollectionProgressData;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -43,13 +43,14 @@ public final class TickEvents {
             }
         });
 
-        // --- STRUCTURES (1.21.1 API) ---
+        // --- STRUCTURES (1.21.1: datapack registry via RegistryAccess) ---
         var structureManager = level.structureManager();
         var structureStart = structureManager.getStructureWithPieceAt(pos, holder -> true);
         if (structureStart != null && structureStart.isValid()) {
-            // In 1.21.1 gibt es kein unwrapKey() an Structure.
-            // Stattdessen den Registry-Key direkt aus der Registry holen.
-            ResourceLocation id = BuiltInRegistries.STRUCTURE.getKey(structureStart.getStructure());
+            // Strukturen liegen im datenpaketbasierten Registry "Registries.STRUCTURE".
+            // BuiltInRegistries enthält dafür kein Feld.
+            var structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+            ResourceLocation id = structureRegistry.getKey(structureStart.getStructure());
             if (id != null && data.markCollected(player.getUUID(), CollectionCategory.STRUCTURES, id)) {
                 ItemCollectorMod.LOGGER.debug(
                         "[ItemCollector] {} discovered structure {}",
