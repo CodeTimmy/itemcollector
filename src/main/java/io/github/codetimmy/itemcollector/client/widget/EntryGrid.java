@@ -16,7 +16,7 @@ import java.util.List;
 
 public final class EntryGrid extends AbstractWidget {
 
-    private static final int COLUMNS = 9;
+    private static final int MAX_COLUMNS = 17;
     private static final int CELL_SIZE = 20;
     private static final int CELL_GAP = 2;
 
@@ -52,8 +52,9 @@ public final class EntryGrid extends AbstractWidget {
 
     @Override
     protected void renderWidget(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTick) {
+        final int columns = columns();
         final int cellStep = CELL_SIZE + CELL_GAP;
-        final int gridWidth = COLUMNS * CELL_SIZE + (COLUMNS - 1) * CELL_GAP;
+        final int gridWidth = columns * CELL_SIZE + (columns - 1) * CELL_GAP;
         final int startX = getX() + (width - gridWidth) / 2;
         final int firstRow = (int) (scrollOffset / cellStep);
         final int rowOffset = (int) (scrollOffset % cellStep);
@@ -64,8 +65,8 @@ public final class EntryGrid extends AbstractWidget {
         for (int visibleRow = 0; visibleRow < visibleRows; visibleRow++) {
             final int row = firstRow + visibleRow;
             final int y = getY() + visibleRow * cellStep - rowOffset;
-            for (int column = 0; column < COLUMNS; column++) {
-                final int entryIndex = row * COLUMNS + column;
+            for (int column = 0; column < columns; column++) {
+                final int entryIndex = row * columns + column;
                 if (entryIndex >= entries.size()) {
                     break;
                 }
@@ -81,10 +82,10 @@ public final class EntryGrid extends AbstractWidget {
             }
         }
         guiGraphics.disableScissor();
-            if (hoveredEntry != null) {
-                guiGraphics.renderTooltip(net.minecraft.client.Minecraft.getInstance().font,
+        if (hoveredEntry != null) {
+            guiGraphics.renderTooltip(net.minecraft.client.Minecraft.getInstance().font,
                     hoveredEntry.displayName(), mouseX, mouseY);
-            }
+        }
     }
 
     @Override
@@ -93,9 +94,14 @@ public final class EntryGrid extends AbstractWidget {
     }
 
     private double maxScrollOffset() {
-        final int rowCount = (entries.size() + COLUMNS - 1) / COLUMNS;
+        final int columns = columns();
+        final int rowCount = (entries.size() + columns - 1) / columns;
         final double contentHeight = rowCount * (CELL_SIZE + CELL_GAP) - CELL_GAP;
         return Math.max(0, contentHeight - height);
+    }
+
+    private int columns() {
+        return Math.max(1, Math.min(MAX_COLUMNS, (width + CELL_GAP) / (CELL_SIZE + CELL_GAP)));
     }
 
     private static ItemStack iconFor(final CollectibleEntry entry) {

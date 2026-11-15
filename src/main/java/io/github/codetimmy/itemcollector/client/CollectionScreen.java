@@ -22,15 +22,17 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
 
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
         super(menu, inventory, title);
-        imageWidth = 400;
-        imageHeight = 136;
+        imageWidth = 560;
+        imageHeight = 300;
         lastTabSwitchMillis = Util.getMillis();
     }
 
     @Override
     protected void init() {
+        imageWidth = Math.max(240, Math.min(560, width - 24));
+        imageHeight = Math.max(136, Math.min(300, height - 24));
         super.init();
-        topPos = Math.max(12, topPos - 37);
+        topPos = Math.max(12, Math.min(topPos - 20, height - imageHeight - 12));
         tabButtons.clear();
 
         final CollectionCategory[] categories = CollectionCategory.values();
@@ -54,7 +56,7 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             addRenderableWidget(button);
         }
 
-        entryGrid = new EntryGrid(leftPos + 8, topPos + 84, imageWidth - 16, 44);
+        entryGrid = new EntryGrid(leftPos + 8, topPos + 84, imageWidth - 16, imageHeight - 92);
         entryGrid.setEntries(ClientPayloadHandler.masterList.getOrDefault(activeCategory, List.of()));
         addRenderableWidget(entryGrid);
     }

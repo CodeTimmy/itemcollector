@@ -286,7 +286,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ### 6c. Entry grid — 🚧 implementation complete; CI validation pending
 
-- [x] `client/widget/EntryGrid` — 9 columns, `cellSize = 20`, vertical scroll
+- [x] `client/widget/EntryGrid` — responsive up to 17 columns, `cellSize = 20`, vertical scroll
 - [x] Render item/block icons via `guiGraphics.renderItem(new ItemStack(item), x, y)`
 - [x] Entities rendered as **spawn eggs** (v1 fallback; PiP is Phase 8)
 - [x] `mouseScrolled(double, double, double, double)` for scroll
