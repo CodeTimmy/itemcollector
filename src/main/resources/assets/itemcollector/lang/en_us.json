@@ -9,5 +9,8 @@
   "collection.category.structures": "Structures",
   "collection.category.effects": "Effects",
   "collection.category.enchantments": "Enchantments",
-  "collection.category.advancements": "Advancements"
+  "collection.category.advancements": "Advancements",
+  "collection.search": "Search collection...",
+  "collection.show_collected.on": "Collected: shown",
+  "collection.show_collected.off": "Collected: hidden"
 }

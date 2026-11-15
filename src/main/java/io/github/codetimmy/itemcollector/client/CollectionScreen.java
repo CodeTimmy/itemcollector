@@ -4,20 +4,28 @@ import io.github.codetimmy.itemcollector.client.widget.TabButton;
 import io.github.codetimmy.itemcollector.client.widget.EntryGrid;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
+import io.github.codetimmy.itemcollector.collection.CollectibleEntry;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.Util;
 import net.minecraft.world.entity.player.Inventory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public final class CollectionScreen extends AbstractContainerScreen<CollectionMenu> {
 
     private final List<TabButton> tabButtons = new ArrayList<>();
     private CollectionCategory activeCategory = CollectionCategory.ITEMS;
     private EntryGrid entryGrid;
+    private EditBox searchBox;
+    private Button collectedToggle;
+    private boolean showCollected = true;
     private long lastTabSwitchMillis;
 
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
@@ -34,6 +42,20 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
         super.init();
         topPos = Math.max(12, Math.min(topPos - 20, height - imageHeight - 12));
         tabButtons.clear();
+
+        final int toggleWidth = 128;
+        searchBox = new EditBox(font, leftPos + 8, topPos + 7, imageWidth - toggleWidth - 24, 18,
+            Component.translatable("collection.search"));
+        searchBox.setHint(Component.translatable("collection.search"));
+        searchBox.setResponder(value -> refreshGrid());
+        addRenderableWidget(searchBox);
+
+        collectedToggle = Button.builder(collectedToggleLabel(), button -> {
+            showCollected = !showCollected;
+            button.setMessage(collectedToggleLabel());
+            refreshGrid();
+        }).bounds(leftPos + imageWidth - toggleWidth - 8, topPos + 6, toggleWidth, 20).build();
+        addRenderableWidget(collectedToggle);
 
         final CollectionCategory[] categories = CollectionCategory.values();
         final int buttonWidth = 40;
@@ -57,7 +79,7 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
         }
 
         entryGrid = new EntryGrid(leftPos + 8, topPos + 84, imageWidth - 16, imageHeight - 92);
-        entryGrid.setEntries(ClientPayloadHandler.masterList.getOrDefault(activeCategory, List.of()));
+        refreshGrid();
         addRenderableWidget(entryGrid);
     }
 
@@ -66,9 +88,34 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             return;
         }
         activeCategory = category;
-        entryGrid.setEntries(ClientPayloadHandler.masterList.getOrDefault(category, List.of()));
+        refreshGrid();
         lastTabSwitchMillis = Util.getMillis();
         tabButtons.forEach(button -> button.setSelected(button.category() == category));
+    }
+
+    private void refreshGrid() {
+        if (entryGrid == null) {
+            return;
+        }
+        final String query = searchBox == null ? "" : searchBox.getValue().toLowerCase(Locale.ROOT);
+        final List<CollectibleEntry> visibleEntries = ClientPayloadHandler.masterList
+                .getOrDefault(activeCategory, List.of())
+                .stream()
+                .filter(entry -> showCollected || !ClientPayloadHandler.collected.contains(entry.id()))
+                .filter(entry -> entry.displayName().getString().toLowerCase(Locale.ROOT).contains(query))
+                .sorted(Comparator
+                        .comparingInt((CollectibleEntry entry) -> entry.id().getNamespace().equals("minecraft") ? 0 : 1)
+                        .thenComparing(entry -> entry.id().getNamespace().toLowerCase(Locale.ROOT))
+                        .thenComparing(entry -> entry.displayName().getString().toLowerCase(Locale.ROOT))
+                        .thenComparing(entry -> entry.id().toString()))
+                .toList();
+        entryGrid.setEntries(visibleEntries);
+    }
+
+    private Component collectedToggleLabel() {
+        return Component.translatable(showCollected
+                ? "collection.show_collected.on"
+                : "collection.show_collected.off");
     }
 
     public CollectionCategory activeCategory() {
@@ -102,7 +149,6 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
 
     @Override
     protected void renderLabels(final GuiGraphics guiGraphics, final int mouseX, final int mouseY) {
-        guiGraphics.drawString(font, title, 8, 8, 0xFFFFFFFF, false);
         guiGraphics.fill(8, 78, imageWidth - 8, 79, 0xFF59645C);
     }
 }

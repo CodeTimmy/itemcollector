@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6d implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6e implemented; GitHub Actions validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -79,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6d implemented**; confirm the GitHub Actions build before starting **6e ⏳**.
+**Current position:** Phase **6e implemented**; confirm the GitHub Actions build before starting **6f ⏳**.
 
 ---
 
@@ -300,12 +300,15 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
-### 6e. Search & tooltips — ⏳ todo
+### 6e. Search, ordering & collected toggle — 🚧 implementation complete; CI validation pending
 
-- [ ] `EditBox` at top; filter on `entry.displayName().getString().toLowerCase().contains(query)`
-- [ ] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
-- [ ] Add a toggle to show or hide entries already present in `ClientPayloadHandler.collected`; default to showing all entries
-- [ ] Keep visible entries in deterministic alphabetical order: vanilla (`minecraft`) first by display name A–Z, then mod namespaces A–Z, with entries within each mod also sorted by display name A–Z
+- [x] `EditBox` at top; filter on `entry.displayName().getString().toLowerCase().contains(query)`
+- [x] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
+- [x] Add a toggle to show or hide entries already present in `ClientPayloadHandler.collected`; default to showing all entries
+- [x] Keep visible entries in deterministic alphabetical order: vanilla (`minecraft`) first by display name A–Z, then mod namespaces A–Z, with entries within each mod also sorted by display name A–Z
+- [x] Add a visible scrollbar to the right side of the GUI with click/drag support
+
+> Editor diagnostics report no errors, and the English localization JSON parses. Build validation is performed by GitHub Actions.
 
 ### 6f. Display polish & animations — ⏳ todo
 
@@ -353,6 +356,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 - [ ] Per-category enable/disable switches
 - [ ] Regex-based item exclusion
 - [ ] Explicit item-ID exclusion list
+- [ ] Collected/uncollected appearance options: invert the default colors or configure custom colors for each state
 - [ ] Other fields: `togetherModeDefault`, `pollIntervalTicks` (default `20`)
 
 ### Commands
