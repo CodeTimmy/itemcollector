@@ -117,7 +117,10 @@ public final class ProgressEvents {
         boolean added = data.markCollected(player.getUUID(), category, entryId);
         if (added) {
             ItemCollectorMod.LOGGER.debug(
-                    "[ItemCollector] {} collected {} ({})", player.getName().getString(), entryId, category);
+                "[ItemCollector] {} collected {} ({})",
+                player.getName().getString(), entryId, category);
+            // Push the updated progress to the client so the GUI refreshes live.
+            ServerLifecycleEvents.sendProgressUpdate(player);
         }
     }
 }
