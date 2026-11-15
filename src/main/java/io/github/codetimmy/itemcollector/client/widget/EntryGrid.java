@@ -210,7 +210,7 @@ public final class EntryGrid extends AbstractWidget {
                     .orElse(null);
             case ENTITIES -> BuiltInRegistries.ITEM.getOptional(spawnEggId(entry.id())).orElse(null);
             case BIOMES -> null;
-            case STRUCTURES -> Items.MAP;
+            case STRUCTURES -> null;
             case EFFECTS -> Items.POTION;
             case ENCHANTMENTS -> Items.ENCHANTED_BOOK;
             case ADVANCEMENTS -> Items.NETHER_STAR;

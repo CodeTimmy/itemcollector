@@ -357,6 +357,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 - [ ] Regex-based item exclusion
 - [ ] Explicit item-ID exclusion list
 - [ ] Configure which biomes each block is assigned to for biome collection/display
+- [ ] Configure which biomes each structure is assigned to for biome collection/display
 - [ ] Collected/uncollected appearance options: invert the default colors or configure custom colors for each state
 - [ ] Other fields: `togetherModeDefault`, `pollIntervalTicks` (default `20`)
 
