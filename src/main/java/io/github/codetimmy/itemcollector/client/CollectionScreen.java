@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraft.Util;
 import net.minecraft.world.entity.player.Inventory;
 
 import java.util.ArrayList;
@@ -28,14 +27,11 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     private Button collectedToggle;
     private boolean showCollected = true;
     private boolean draggingScrollbar;
-    private CollectionCategory previousCategory = CollectionCategory.ITEMS;
-    private long lastTabSwitchMillis;
 
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
         super(menu, inventory, title);
         imageWidth = 560;
         imageHeight = 300;
-        lastTabSwitchMillis = Util.getMillis();
     }
 
     @Override
@@ -90,10 +86,8 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
         if (activeCategory == category) {
             return;
         }
-        previousCategory = activeCategory;
         activeCategory = category;
         refreshGrid();
-        lastTabSwitchMillis = Util.getMillis();
         tabButtons.forEach(button -> button.setSelected(button.category() == category));
     }
 
@@ -128,10 +122,6 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
 
     public double scrollOffset() {
         return entryGrid == null ? 0 : entryGrid.scrollOffset();
-    }
-
-    public long lastTabSwitchMillis() {
-        return lastTabSwitchMillis;
     }
 
     @Override
@@ -190,30 +180,6 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
         guiGraphics.fill(leftPos, topPos + imageHeight - 1, leftPos + imageWidth, topPos + imageHeight, 0xFF8A9A8B);
         guiGraphics.fill(leftPos, topPos, leftPos + 1, topPos + imageHeight, 0xFF8A9A8B);
         guiGraphics.fill(leftPos + imageWidth - 1, topPos, leftPos + imageWidth, topPos + imageHeight, 0xFF8A9A8B);
-    }
-
-    @Override
-    public void render(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-        renderTabUnderline(guiGraphics);
-    }
-
-    private void renderTabUnderline(final GuiGraphics guiGraphics) {
-        if (tabButtons.isEmpty()) {
-            return;
-        }
-        final float progress = Math.min(1.0F, Math.max(0.0F, (Util.getMillis() - lastTabSwitchMillis) / 200.0F));
-        final float easedProgress = 1.0F - (float) Math.pow(1.0F - progress, 3.0F);
-        final int previousIndex = previousCategory.ordinal();
-        final int currentIndex = activeCategory.ordinal();
-        final int buttonWidth = 40;
-        final int gap = 6;
-        final int rowWidth = tabButtons.size() * buttonWidth + (tabButtons.size() - 1) * gap;
-        final int startX = leftPos + (imageWidth - rowWidth) / 2;
-        final float previousCenter = startX + previousIndex * (buttonWidth + gap) + buttonWidth / 2.0F;
-        final float currentCenter = startX + currentIndex * (buttonWidth + gap) + buttonWidth / 2.0F;
-        final int underlineX = Math.round(previousCenter + (currentCenter - previousCenter) * easedProgress - 14);
-        guiGraphics.fill(underlineX, topPos + 30, underlineX + 28, topPos + 32, 0xFFA8C49E);
     }
 
     @Override

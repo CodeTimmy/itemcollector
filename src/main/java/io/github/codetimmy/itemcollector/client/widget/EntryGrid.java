@@ -7,15 +7,16 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class EntryGrid extends AbstractWidget {
 
@@ -31,7 +32,6 @@ public final class EntryGrid extends AbstractWidget {
     private double scrollOffset;
     private boolean scrollbarDragActive;
     private double scrollbarDragOffset;
-        private long contentChangeMillis = Util.getMillis();
 
     public EntryGrid(final int x, final int y, final int width, final int height) {
         super(x, y, width, height, Component.empty());
@@ -40,7 +40,6 @@ public final class EntryGrid extends AbstractWidget {
     public void setEntries(final List<CollectibleEntry> entries) {
         this.entries = entries;
         scrollOffset = 0;
-        contentChangeMillis = Util.getMillis();
     }
 
     public double scrollOffset() {
@@ -58,7 +57,6 @@ public final class EntryGrid extends AbstractWidget {
             return false;
         }
         scrollOffset = nextOffset;
-        contentChangeMillis = Util.getMillis();
         return true;
     }
 
@@ -72,7 +70,6 @@ public final class EntryGrid extends AbstractWidget {
         final int firstRow = (int) (scrollOffset / cellStep);
         final int rowOffset = (int) (scrollOffset % cellStep);
         final int visibleRows = (height + cellStep - 1) / cellStep + 1;
-        final float fade = Math.min(1.0F, Math.max(0.0F, (Util.getMillis() - contentChangeMillis) / 300.0F));
         CollectibleEntry hoveredEntry = null;
 
         guiGraphics.enableScissor(getX(), getY(), getX() + width, getY() + height);
@@ -90,17 +87,15 @@ public final class EntryGrid extends AbstractWidget {
                         && mouseY >= y && mouseY < y + CELL_SIZE;
                 final CollectibleEntry entry = entries.get(entryIndex);
                 guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE,
-                    withOpacity(hovered ? 0xFF46534A : 0xFF292D2B, fade));
+                        hovered ? 0xFF46534A : 0xFF292D2B);
                 final Item icon = iconFor(entry);
-                guiGraphics.setColor(1.0F, 1.0F, 1.0F, fade);
                 if (icon == null) {
                     guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
                 } else {
                     guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
                 }
-                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
                 if (!ClientPayloadHandler.collected.contains(entry.id())) {
-                    guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, withOpacity(0x80808080, fade));
+                    guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x80808080);
                 }
                 if (hovered) {
                     hoveredEntry = entry;
@@ -111,7 +106,7 @@ public final class EntryGrid extends AbstractWidget {
         renderScrollbar(guiGraphics);
         if (hoveredEntry != null) {
             guiGraphics.renderTooltip(net.minecraft.client.Minecraft.getInstance().font,
-                    tooltipFor(hoveredEntry), mouseX, mouseY);
+                    tooltipLines(hoveredEntry), Optional.empty(), mouseX, mouseY);
         }
     }
 
@@ -195,11 +190,6 @@ public final class EntryGrid extends AbstractWidget {
         return Math.max(height, rowCount * (CELL_SIZE + CELL_GAP) - CELL_GAP);
     }
 
-    private static int withOpacity(final int color, final float opacity) {
-        final int alpha = Math.round(((color >>> 24) & 0xFF) * opacity);
-        return (color & 0x00FFFFFF) | (alpha << 24);
-    }
-
     private void setScrollFromMouse(final double mouseY) {
         final int travel = height - scrollbarThumbHeight();
         final double maxOffset = maxScrollOffset();
@@ -209,7 +199,6 @@ public final class EntryGrid extends AbstractWidget {
         }
         final double thumbTop = Math.max(0, Math.min(travel, mouseY - getY() - scrollbarDragOffset));
         scrollOffset = thumbTop / travel * maxOffset;
-        contentChangeMillis = Util.getMillis();
     }
 
     private static Item iconFor(final CollectibleEntry entry) {
@@ -228,14 +217,17 @@ public final class EntryGrid extends AbstractWidget {
         };
     }
 
-    private static Component tooltipFor(final CollectibleEntry entry) {
+    private static List<Component> tooltipLines(final CollectibleEntry entry) {
         final String namespace = entry.id().getNamespace();
         final String modName = namespace.equals("minecraft")
                 ? "Minecraft"
                 : ModList.get().getModContainerById(namespace)
                         .map(container -> container.getModInfo().getDisplayName())
                         .orElse(namespace);
-        return Component.translatable("tooltip.itemcollector.entry", displayNameFor(entry), modName);
+        return List.of(
+            displayNameFor(entry),
+            Component.literal(modName).withStyle(ChatFormatting.BLUE)
+        );
     }
 
     public static Component displayNameFor(final CollectibleEntry entry) {

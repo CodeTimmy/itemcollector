@@ -310,12 +310,11 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors, and the English localization JSON parses. Build validation is performed by GitHub Actions.
 
-### 6f. Display polish & animations — 🚧 implementation complete; CI validation pending
+### 6f. Display polish — 🚧 implementation complete; CI validation pending
 
-- [x] Tab underline eases over 200 ms after `lastTabSwitchMillis`
-- [x] Entry fade-in over 300 ms after category/scroll change
+- [x] Keep category selection static; do not animate the tab underline or grid contents (hover feedback remains)
 - [x] Resolve raw item/block ID fallbacks to localized game names in the active language, including vanilla IDs such as `minecraft:brick`
-- [x] Include the item's mod name in the tooltip for modded and Vanilla entries
+- [x] Show the item name and mod name on separate tooltip lines, with the mod name blue
 - [x] Render `assets/itemcollector/textures/gui/unknown.png` instead of a barrier when an item or block icon is unavailable
 
 > Editor diagnostics report no errors, and the placeholder texture exists. Build validation is performed by GitHub Actions.
