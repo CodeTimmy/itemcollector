@@ -40,6 +40,7 @@ public final class TickEvents {
             if (data.markCollected(player.getUUID(), CollectionCategory.BIOMES, id)) {
                 ItemCollectorMod.LOGGER.debug(
                         "[ItemCollector] {} discovered biome {}", player.getName().getString(), id);
+                ServerLifecycleEvents.sendProgressUpdate(player);
             }
         });
 
@@ -55,6 +56,7 @@ public final class TickEvents {
                 ItemCollectorMod.LOGGER.debug(
                         "[ItemCollector] {} discovered structure {}",
                         player.getName().getString(), id);
+                ServerLifecycleEvents.sendProgressUpdate(player);
             }
         }
     }
