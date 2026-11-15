@@ -79,7 +79,7 @@ public final class EntryGrid extends AbstractWidget {
                 guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, hovered ? 0xFF46534A : 0xFF292D2B);
                 guiGraphics.renderItem(iconFor(entry), x + 2, y + 2);
                 if (!ClientPayloadHandler.collected.contains(entry.id())) {
-                    guiGraphics.fill(x + 2, y + 2, x + 18, y + 18, 0x80808080);
+                    guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x80808080);
                 }
                 if (hovered) {
                     hoveredEntry = entry;
