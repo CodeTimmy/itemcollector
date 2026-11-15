@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -58,7 +58,7 @@ public final class CollectibleRegistry {
             final ResourceLocation id = entry.getKey().location();
             final EntityType<?> entityType = entry.getValue();
             if (entityType == EntityType.PLAYER
-                    || !LivingEntity.class.isAssignableFrom(entityType.getBaseClass())) {
+                    || (entityType.getCategory() == MobCategory.MISC && entityType != EntityType.ARMOR_STAND)) {
                 continue;
             }
 
