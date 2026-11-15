@@ -314,7 +314,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 - [ ] Tab underline eases over 200 ms after `lastTabSwitchMillis`
 - [ ] Entry fade-in over 300 ms after category/scroll change
-- [ ] Display vanilla fallback IDs without the namespace (for example, `minecraft:brick` → `brick`)
+- [x] Resolve raw item/block ID fallbacks to localized game names in the active language, including vanilla IDs such as `minecraft:brick`
 - [ ] Include the item's mod name in the tooltip for modded and Vanilla entries
 
 ### Data source contract (critical for AI contributors)

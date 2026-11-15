@@ -95,7 +95,7 @@ public final class EntryGrid extends AbstractWidget {
         renderScrollbar(guiGraphics);
         if (hoveredEntry != null) {
             guiGraphics.renderTooltip(net.minecraft.client.Minecraft.getInstance().font,
-                    hoveredEntry.displayName(), mouseX, mouseY);
+                    displayNameFor(hoveredEntry), mouseX, mouseY);
         }
     }
 
@@ -109,17 +109,20 @@ public final class EntryGrid extends AbstractWidget {
         final int scrollbarX = scrollbarX();
         if (button == 0 && mouseX >= scrollbarX - 2 && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2
                 && mouseY >= getY() && mouseY <= getY() + height && maxScrollOffset() > 0) {
-            setFocused(true);
-            final int thumbHeight = scrollbarThumbHeight();
-            final int thumbY = scrollbarThumbY();
-            draggingScrollbar = true;
-            scrollbarDragOffset = mouseY >= thumbY && mouseY <= thumbY + thumbHeight
-                    ? mouseY - thumbY
-                    : thumbHeight / 2.0;
-            setScrollFromMouse(mouseY);
-            return true;
+            return super.mouseClicked(mouseX, mouseY, button);
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
+    }
+
+    @Override
+    public void onClick(final double mouseX, final double mouseY) {
+        final int thumbHeight = scrollbarThumbHeight();
+        final int thumbY = scrollbarThumbY();
+        draggingScrollbar = true;
+        scrollbarDragOffset = mouseY >= thumbY && mouseY <= thumbY + thumbHeight
+                ? mouseY - thumbY
+                : thumbHeight / 2.0;
+        setScrollFromMouse(mouseY);
     }
 
     @Override
@@ -211,6 +214,21 @@ public final class EntryGrid extends AbstractWidget {
             case ADVANCEMENTS -> Items.NETHER_STAR;
         };
         return new ItemStack(item);
+    }
+
+    public static Component displayNameFor(final CollectibleEntry entry) {
+        if (!entry.displayName().getString().equals(entry.id().toString())) {
+            return entry.displayName();
+        }
+        return switch (entry.category()) {
+            case ITEMS -> BuiltInRegistries.ITEM.getOptional(entry.id())
+                    .map(item -> new ItemStack(item).getHoverName())
+                    .orElseGet(() -> Component.literal(entry.id().getPath()));
+            case BLOCKS -> BuiltInRegistries.BLOCK.getOptional(entry.id())
+                    .map(block -> block.getName())
+                    .orElseGet(() -> Component.literal(entry.id().getPath()));
+            default -> Component.literal(entry.id().getPath());
+        };
     }
 
     private static ResourceLocation spawnEggId(final ResourceLocation entityId) {

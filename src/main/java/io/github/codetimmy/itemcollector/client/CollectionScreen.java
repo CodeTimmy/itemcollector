@@ -103,11 +103,11 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
                 .getOrDefault(activeCategory, List.of())
                 .stream()
                 .filter(entry -> showCollected || !ClientPayloadHandler.collected.contains(entry.id()))
-                .filter(entry -> entry.displayName().getString().toLowerCase(Locale.ROOT).contains(query))
+                .filter(entry -> EntryGrid.displayNameFor(entry).getString().toLowerCase(Locale.ROOT).contains(query))
                 .sorted(Comparator
                         .comparingInt((CollectibleEntry entry) -> entry.id().getNamespace().equals("minecraft") ? 0 : 1)
                         .thenComparing(entry -> entry.id().getNamespace().toLowerCase(Locale.ROOT))
-                        .thenComparing(entry -> entry.displayName().getString().toLowerCase(Locale.ROOT))
+                    .thenComparing(entry -> EntryGrid.displayNameFor(entry).getString().toLowerCase(Locale.ROOT))
                         .thenComparing(entry -> entry.id().toString()))
                 .toList();
         entryGrid.setEntries(visibleEntries);
