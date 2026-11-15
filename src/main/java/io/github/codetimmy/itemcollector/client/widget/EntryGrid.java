@@ -27,8 +27,6 @@ public final class EntryGrid extends AbstractWidget {
     private static final int SCROLLBAR_GAP = 4;
         private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "itemcollector", "textures/gui/unknown.png");
-            private static final ResourceLocation FOLIAGE_MASK = ResourceLocation.fromNamespaceAndPath(
-                "itemcollector", "textures/gui/foliage_mask.png");
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
@@ -94,19 +92,21 @@ public final class EntryGrid extends AbstractWidget {
                 if (icon == null) {
                     guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
                 } else {
+                    final boolean tintedSapling = entry.category() == CollectionCategory.BIOMES
+                            && entry.extraData() != null && entry.extraData().contains("foliage_color");
+                    if (tintedSapling) {
+                        final int foliageColor = entry.extraData().getInt("foliage_color");
+                        guiGraphics.setColor(
+                                ((foliageColor >> 16) & 0xFF) / 255.0F,
+                                ((foliageColor >> 8) & 0xFF) / 255.0F,
+                                (foliageColor & 0xFF) / 255.0F,
+                                1.0F
+                        );
+                    }
                     guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
-                }
-                if (entry.category() == CollectionCategory.BIOMES && entry.extraData() != null
-                        && entry.extraData().contains("foliage_color")) {
-                    final int foliageColor = entry.extraData().getInt("foliage_color");
-                    guiGraphics.setColor(
-                            ((foliageColor >> 16) & 0xFF) / 255.0F,
-                            ((foliageColor >> 8) & 0xFF) / 255.0F,
-                            (foliageColor & 0xFF) / 255.0F,
-                            0.72F
-                    );
-                    guiGraphics.blit(FOLIAGE_MASK, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
-                    guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    if (tintedSapling) {
+                        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    }
                 }
                 if (!ClientPayloadHandler.collected.contains(entry.id())) {
                     guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x80808080);
