@@ -3,6 +3,7 @@ package io.github.codetimmy.itemcollector.client;
 import io.github.codetimmy.itemcollector.ItemCollectorMod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.flag.FeatureFlags;
@@ -32,5 +33,10 @@ public final class CollectionMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(final Player player) {
         return true;
+    }
+
+    @Override
+    public ItemStack quickMoveStack(final Player player, final int slotIndex) {
+        return ItemStack.EMPTY;
     }
 }

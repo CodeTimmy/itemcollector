@@ -1,8 +1,8 @@
 package io.github.codetimmy.itemcollector.client;
 
 import io.github.codetimmy.itemcollector.ItemCollectorMod;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.resources.InputConstants;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
