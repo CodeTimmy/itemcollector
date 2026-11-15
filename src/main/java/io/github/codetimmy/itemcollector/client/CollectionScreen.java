@@ -21,13 +21,14 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
         super(menu, inventory, title);
         imageWidth = 400;
-        imageHeight = 200;
+        imageHeight = 136;
         lastTabSwitchMillis = Util.getMillis();
     }
 
     @Override
     protected void init() {
         super.init();
+        topPos = Math.max(12, topPos - 37);
         tabButtons.clear();
 
         final CollectionCategory[] categories = CollectionCategory.values();
@@ -86,12 +87,12 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     @Override
     protected void renderLabels(final GuiGraphics guiGraphics, final int mouseX, final int mouseY) {
         guiGraphics.drawString(font, title, 8, 8, 0xFFFFFFFF, false);
-        guiGraphics.fill(8, 106, imageWidth - 8, 107, 0xFF59645C);
+        guiGraphics.fill(8, 78, imageWidth - 8, 79, 0xFF59645C);
         guiGraphics.drawString(
             font,
             Component.translatable("collection.category." + activeCategory.name().toLowerCase()),
             10,
-            116,
+            88,
             0xFFFFFFFF,
             false
         );
