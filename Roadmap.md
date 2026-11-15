@@ -337,7 +337,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
 | 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced |
-| 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
+| 7 | `STRUCTURES` | `Registries.STRUCTURE` via server `RegistryAccess` | Populated in the master list; discovered when a player enters a structure piece, then synced |
 
 **Steps per new category:**
 

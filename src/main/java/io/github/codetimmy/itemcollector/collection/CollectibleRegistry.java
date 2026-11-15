@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -42,9 +43,9 @@ public final class CollectibleRegistry {
 
         buildEntities();
         buildBiomes(server);
+        buildStructures(server);
 
         // Placeholders for later phases (see Phase 7 of the roadmap)
-        MASTER_LIST.put(CollectionCategory.STRUCTURES, List.of());
         MASTER_LIST.put(CollectionCategory.EFFECTS, List.of());
         MASTER_LIST.put(CollectionCategory.ENCHANTMENTS, List.of());
 
@@ -83,6 +84,20 @@ public final class CollectibleRegistry {
             entries.add(new CollectibleEntry(id, displayName, CollectionCategory.BIOMES));
         }
         MASTER_LIST.put(CollectionCategory.BIOMES, entries);
+    }
+
+    private static void buildStructures(final MinecraftServer server) {
+        final List<CollectibleEntry> entries = new ArrayList<>();
+        final var structureRegistry = server.overworld().registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Map.Entry<ResourceKey<Structure>, Structure> entry : structureRegistry.entrySet()) {
+            final ResourceLocation id = entry.getKey().location();
+            entries.add(new CollectibleEntry(
+                    id,
+                    Component.literal(id.toString()),
+                    CollectionCategory.STRUCTURES
+            ));
+        }
+        MASTER_LIST.put(CollectionCategory.STRUCTURES, entries);
     }
 
     // ------------------------------------------------------------------
