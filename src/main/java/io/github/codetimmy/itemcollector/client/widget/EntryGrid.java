@@ -208,7 +208,7 @@ public final class EntryGrid extends AbstractWidget {
                     .map(block -> block.asItem())
                     .filter(item -> item != Items.AIR)
                     .orElse(null);
-            case ENTITIES -> BuiltInRegistries.ITEM.getOptional(spawnEggId(entry.id())).orElse(Items.SPAWNER);
+            case ENTITIES -> BuiltInRegistries.ITEM.getOptional(spawnEggId(entry.id())).orElse(null);
             case BIOMES -> Items.OAK_SAPLING;
             case STRUCTURES -> Items.MAP;
             case EFFECTS -> Items.POTION;

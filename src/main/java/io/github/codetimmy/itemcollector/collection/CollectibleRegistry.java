@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -55,11 +56,15 @@ public final class CollectibleRegistry {
         final List<CollectibleEntry> entries = new ArrayList<>();
         for (Map.Entry<ResourceKey<EntityType<?>>, EntityType<?>> entry : BuiltInRegistries.ENTITY_TYPE.entrySet()) {
             final ResourceLocation id = entry.getKey().location();
-            if (entry.getValue() == EntityType.PLAYER) continue;
+            final EntityType<?> entityType = entry.getValue();
+            if (entityType == EntityType.PLAYER
+                    || !LivingEntity.class.isAssignableFrom(entityType.getBaseClass())) {
+                continue;
+            }
 
             entries.add(new CollectibleEntry(
                     id,
-                    Component.translatable(entry.getValue().getDescriptionId()),
+                    Component.translatable(entityType.getDescriptionId()),
                     CollectionCategory.ENTITIES
             ));
         }
