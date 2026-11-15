@@ -7,11 +7,15 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.AbstractFish;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -69,6 +73,43 @@ public final class ProgressEvents {
     public static void onVillagerTrade(TradeWithVillagerEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         markItemStack(player, event.getMerchantOffer().getResult());
+    }
+
+    @SubscribeEvent
+    public static void onFishBucketed(PlayerInteractEvent.EntityInteract event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.isCanceled() || player.isSpectator()) return;
+        if (!(event.getTarget() instanceof AbstractFish fish) || !fish.isAlive()) return;
+        if (!event.getItemStack().is(Items.BUCKET)) return;
+
+        final ResourceLocation fishId = BuiltInRegistries.ENTITY_TYPE.getKey(fish.getType());
+        if (fishId != null) {
+            mark(player, CollectionCategory.ENTITIES, fishId);
+        }
+        markItemStack(player, event.getItemStack());
+        markItemStack(player, fish.getBucketItemStack());
+    }
+
+    @SubscribeEvent
+    public static void onFluidBucketed(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.isCanceled() || !event.getItemStack().is(Items.BUCKET)) return;
+
+        final var level = event.getLevel();
+        final var pos = event.getPos();
+        final var state = level.getBlockState(pos);
+        final var fluid = state.getFluidState();
+        if (!fluid.isSource()) return;
+
+        if (state.is(Blocks.WATER) && fluid.is(Fluids.WATER)) {
+            markBlock(player, Blocks.WATER);
+            markItemStack(player, event.getItemStack());
+            markItemStack(player, new ItemStack(Items.WATER_BUCKET));
+        } else if (state.is(Blocks.LAVA) && fluid.is(Fluids.LAVA)) {
+            markBlock(player, Blocks.LAVA);
+            markItemStack(player, event.getItemStack());
+            markItemStack(player, new ItemStack(Items.LAVA_BUCKET));
+        }
     }
 
     @SubscribeEvent
@@ -187,6 +228,13 @@ public final class ProgressEvents {
         final ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id != null) {
             mark(player, CollectionCategory.ITEMS, id);
+        }
+    }
+
+    private static void markBlock(final ServerPlayer player, final net.minecraft.world.level.block.Block block) {
+        final ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
+        if (id != null) {
+            mark(player, CollectionCategory.BLOCKS, id);
         }
     }
 
