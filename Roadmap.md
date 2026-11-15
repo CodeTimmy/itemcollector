@@ -1,6 +1,8 @@
-# Collection Log Mod — Implementation Roadmap
+# Collection Log Mod — Implementation Roadmap (v2)
 
-> Structured specification intended for both human developers and AI assistants resuming work on this project. Each phase is independently actionable and references concrete NeoForge 1.21.1 APIs.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 ⏳ next. Phase 7–8 ⏳ pending.
+>
+> This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
 ---
 
@@ -13,45 +15,41 @@
 | Minecraft | `1.21.1` |
 | NeoForge | `21.1.264` (minimum), range `[21.1.264,22.0)` |
 | Java | `21` |
-| Build system | Gradle with `net.neoforged.moddev` plugin |
+| Build system | Gradle + `net.neoforged.moddev` plugin |
 | Loader range | `[4,)` |
 | License | `GPL-3.0` |
 | Current version | `0.1.0` |
-| Target side | `BOTH` (server-authoritative progress, client UI) |
+| Target side | `BOTH` |
 | Reference mod | [Collect Everything](https://modrinth.com/mod/collect-everything) |
 
-### Source layout
+### Current source layout
 
 ```
 src/main/java/io/github/codetimmy/itemcollector/
-├── ItemCollectorMod.java              # @Mod entry point
+├── ItemCollectorMod.java                    ✅
 ├── collection/
-│   ├── CollectionCategory.java        # enum
-│   ├── CollectibleEntry.java          # record
-│   ├── CollectibleRegistry.java       # master list builder
-│   └── CollectionProgressData.java    # SavedData
+│   ├── CollectionCategory.java              ✅
+│   ├── CollectibleEntry.java                ✅
+│   ├── CollectibleRegistry.java             ✅
+│   └── CollectionProgressData.java          ✅ [CORRECTED: SavedData.Factory]
 ├── event/
-│   ├── ProgressEvents.java            # server-side detection
-│   └── TickEvents.java                # biome/structure polling
+│   ├── ServerLifecycleEvents.java           ✅ (master list + login sync)
+│   ├── ProgressEvents.java                  ✅
+│   └── TickEvents.java                      ✅ [CORRECTED: Registries.STRUCTURE]
 ├── network/
-│   ├── NetworkHandler.java            # payload registration
-│   ├── SyncMasterListPayload.java
-│   └── SyncProgressPayload.java
-├── client/
-│   ├── ClientPayloadHandler.java
-│   ├── CollectionScreen.java
-│   ├── CollectionMenu.java
-│   └── widget/
-│       ├── TabButton.java
-│       └── EntryGrid.java
-└── config/
-    └── CollectionConfig.java
+│   ├── NetworkHandler.java                  ✅
+│   ├── SyncMasterListPayload.java           ✅
+│   └── SyncProgressPayload.java             ✅
+└── client/
+    └── ClientPayloadHandler.java            ✅ (only the payload cache; no GUI yet)
+```
 
-src/main/resources/
-├── META-INF/neoforge.mods.toml
-└── assets/itemcollector/
-    ├── lang/en_us.json
-    └── textures/gui/
+Directories still to be created:
+
+```
+├── client/widget/                           ⏳ Phase 6
+├── command/                                 ⏳ Phase 8
+└── config/                                  ⏳ Phase 8
 ```
 
 ---
@@ -60,409 +58,365 @@ src/main/resources/
 
 ```mermaid
 graph TD
-    P1[Phase 1: Architecture & Data Model] --> P2[Phase 2: Master List Generation]
-    P2 --> P3[Phase 3: Event Detection]
-    P3 --> P4[Phase 4: Persistence]
-    P4 --> P5[Phase 5: Networking]
-    P5 --> P6[Phase 6: GUI]
-    P6 --> P7[Phase 7: Category Expansion]
-    P7 --> P8[Phase 8: Polish & Release]
+    P1[Phase 1 ✅ Architecture] --> P2[Phase 2 ✅ Master List]
+    P2 --> P3[Phase 3 ✅ Event Detection]
+    P3 --> P4[Phase 4 ✅ Persistence]
+    P4 --> P5[Phase 5 ✅ Networking]
+    P5 --> P6[Phase 6 ⏳ GUI]
+    P6 --> P7[Phase 7 ⏳ Category Expansion]
+    P7 --> P8[Phase 8 ⏳ Polish & Release]
 
-    P3 -.->|Can develop in parallel| P4
-    P6a[Phase 6a: Screen skeleton] --> P6b[Phase 6b: Tabs]
-    P6b --> P6c[Phase 6c: Entry grid]
-    P6c --> P6d[Phase 6d: Uncollected effect]
-    P6d --> P6e[Phase 6e: Search & tooltips]
-    P6e --> P6f[Phase 6f: Animations]
+    P6a[6a: Screen skeleton] --> P6b[6b: Tabs]
+    P6b --> P6c[6c: Entry grid]
+    P6c --> P6d[6d: Uncollected effect]
+    P6d --> P6e[6e: Search & tooltips]
+    P6e --> P6f[6f: Animations]
 ```
 
-**Critical path for MVP:** `P1 → P2 → P3 → P4 → P5 → P6` for the **`ITEMS` category only**. All other categories (Phase 7) are repetition of the same pipeline.
+**Current position:** Between **Phase 5 ✅** and **Phase 6a ⏳**.
 
 ---
 
-## 2. Phase 1 — Architecture & Data Model
+## 2. Phase 1 — Architecture & Data Model ✅
 
-**Goal:** Define all core types and storage strategy before writing logic.
+**Goal:** Define core types.
 
-**Files touched:** `collection/CollectionCategory.java`, `collection/CollectibleEntry.java`
+### Files
 
-### Tasks
+- `collection/CollectionCategory.java` — enum with 8 values
+- `collection/CollectibleEntry.java` — record `(ResourceLocation id, Component displayName, CollectionCategory category, @Nullable CompoundTag extraData)`
 
-- [ ] Define `CollectionCategory` enum with values: `ITEMS, BLOCKS, ENTITIES, BIOMES, STRUCTURES, EFFECTS, ENCHANTMENTS, ADVANCEMENTS`
-- [ ] Define `CollectibleEntry` record:
-  ```java
-  public record CollectibleEntry(
-      ResourceLocation id,
-      Component displayName,
-      CollectionCategory category,
-      @Nullable CompoundTag extraData   // entity variants, etc.
-  ) {}
-  ```
-- [ ] Document the two-store persistence model in a `README.md` under `collection/`:
-  - **Store A — master list:** what *can* be collected; rebuilt each startup from registries
-  - **Store B — progress:** what *has been* collected; persisted via `SavedData`
+### Implementation notes
 
-### Design decisions (log here when changed)
+- Compact constructor enforces non-null on `id`, `displayName`, `category`.
+- Convenience constructor for non-variant entries; `hasVariantData()` helper for Phase 7.
 
-| Decision | Chosen | Alternatives | Reason |
-|---|---|---|---|
-| Progress storage | `SavedData` on Overworld | Data attachments on `ServerPlayer` | Simpler for "Together" mode merge; single file |
-| Master list transport | Full sync on join | Chunked / on-demand | Small enough for ~2k entries; chunking added if packet > 1 MB |
-| Entity variant key | `CompoundTag` in `extraData` | Subclass per entity | Schema-free, survives mod updates |
-
-**Done when:** Types compile and no registry/event code exists yet.
+**Status:** ✅ Compiles, no deviations from plan.
 
 ---
 
-## 3. Phase 2 — Master List Generation
+## 3. Phase 2 — Master List Generation ✅
 
-**Goal:** Build the list of all collectible entries at server start.
+**Goal:** Build `Map<CollectionCategory, List<CollectibleEntry>>` at server start.
 
-**Files touched:** `collection/CollectibleRegistry.java`, `event/ServerLifecycleEvents.java`
+### Files
 
-### Registries to iterate
+- `collection/CollectibleRegistry.java`
+- `event/ServerLifecycleEvents.java` (registers `ServerStartedEvent`)
 
-All via `net.minecraft.core.registries.BuiltInRegistries`. Iterate with:
+### What works
 
-```java
-for (Map.Entry<ResourceKey<T>, T> entry : BuiltInRegistries.<REGISTRY>.entrySet()) {
-    ResourceLocation id = entry.getKey().location();
-    // ...
-}
-```
+- `ITEMS` and `BLOCKS` populated with **creative-tab ordering**, deduplicated via `LinkedHashSet<ResourceLocation>`, fallback pass appends non-tab entries.
+- `ADVANCEMENTS` populated from `server.getAdvancements().getAllAdvancements()`, filtering `display().isEmpty()`.
+- All other categories are **empty placeholders** — Phase 7 will fill them.
+- Log line confirms entry counts on startup.
 
-| Category | Registry field | Notes |
-|---|---|---|
-| `ITEMS` | `BuiltInRegistries.ITEM` | Skip `AIR` |
-| `BLOCKS` | `BuiltInRegistries.BLOCK` | Skip `AIR`, technical blocks |
-| `ENTITIES` | `BuiltInRegistries.ENTITY_TYPE` | Skip non-spawnable (`!type.canSummon()`) |
-| `BIOMES` | `BuiltInRegistries.BIOME` | Skip `minecraft:the_void` optionally |
-| `STRUCTURES` | `BuiltInRegistries.STRUCTURE` | |
-| `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | |
-| `ENCHANTMENTS` | `BuiltInRegistries.ENCHANTMENT` | |
-| `ADVANCEMENTS` | **Not a registry** | Query `server.getAdvancements().getAllAdvancements()` |
+### [CORRECTED] — Registry access facts for 1.21.1
 
-### Tasks
-
-- [ ] Implement `CollectibleRegistry.rebuild(ServerLevel level)` — clears and repopulates `Map<CollectionCategory, List<CollectibleEntry>>`
-- [ ] Register `ServerStartedEvent` listener → call `CollectibleRegistry.rebuild(server.overworld())`
-- [ ] Implement `CreativeModeTabs` ordering for `ITEMS`/`BLOCKS`: iterate `CreativeModeTabs.allTabs()`, collect `ItemStack`s in order, then append remaining registry entries
-- [ ] Implement blacklist filter (config-driven, see Phase 8) — predicate on `ResourceLocation.getPath()`
-- [ ] Enumerate entity variants: for entities with `EntityDataAccessor` variants (Sheep color, Villager profession, Axolotl color, etc.), create one `CollectibleEntry` per variant with `extraData` populated
-
-### Gotchas
-
-- **Never** query registries during `RegisterEvent` or mod construction — entries are incomplete.
-- `ServerStartedEvent` fires **after** the server has fully loaded all datapacks, so advancement list is complete.
-- Store the sorted list, not a `Set`, to preserve creative-tab order in the UI.
-
-**Done when:** A debug command `/collection dump` prints the count of entries per category and the first 5 IDs of each.
-
----
-
-## 4. Phase 3 — Event Detection
-
-**Goal:** Mark entries as collected when the player interacts with them.
-
-**Files touched:** `event/ProgressEvents.java`, `event/TickEvents.java`
-
-### Event-to-category mapping
-
-All handlers must gate on `!level.isClientSide()` before touching progress.
-
-| Category | Event class | Extraction |
-|---|---|---|
-| `ITEMS` | `ItemEntityPickupEvent.Post` | `event.getOriginalStack().getItem()` → `BuiltInRegistries.ITEM.getKey(item)` |
-| `BLOCKS` | `BlockEvent.BreakEvent` | `event.getState().getBlock()` → `BuiltInRegistries.BLOCK.getKey(block)` |
-| `ENTITIES` | `LivingDeathEvent` | `event.getEntity().getType()` → registry key; read variant via `instanceof` checks |
-| `ADVANCEMENTS` | `AdvancementEvent.AdvancementEarnEvent` | `event.getAdvancement().id()` |
-| `EFFECTS` | `MobEffectEvent.Applicable` | `event.getEffectInstance().getEffect()` holder |
-| `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` + scan stack `getEnchantments()` | each `Holder<Enchantment>` |
-| `BIOMES` | **Polling** — `PlayerTickEvent.Post` every 20 ticks | `level.getBiome(player.blockPosition())` |
-| `STRUCTURES` | **Polling** — same tick, same throttle | `level.structureManager().getStructureWithPieceAt(pos, tag)` |
-
-### Tasks
-
-- [ ] Implement `ProgressEvents` with `@EventBusSubscriber(modid = MODID, value = Dist.DEDICATED_SERVER)` — **not** client dist
-- [ ] Implement `TickEvents` with a per-player tick counter (`Map<UUID, Integer>` in a `WeakHashMap`) to throttle polling to once per second
-- [ ] Route all detections through a single method:
-  ```java
-  CollectionProgressData.get(server).markCollected(player.getUUID(), category, entryId);
-  ```
-- [ ] Fire a `SyncProgressPayload` (Phase 5) after each successful mark — debounce to max 4 packets/sec/player
-
-### Gotchas
-
-- `BlockEvent.BreakEvent` fires on both sides — always check `isClientSide()`.
-- `ItemEntityPickupEvent.Post` — the player is `event.getEntity()`; use `getOriginalStack()` not `getCurrentStack()`.
-- Advancement IDs include `minecraft:recipes/...` — filter these out or they'll bloat the list (decision: filter by `Advancement#display().isEmpty()`).
-- Structure polling at `player.blockPosition()` misses structures the player walks past but doesn't enter — acceptable for v1; note as future enhancement.
-
-**Done when:** Manually breaking a block or picking up an item logs `[ItemCollector] marked <id> for <player>`.
-
----
-
-## 5. Phase 4 — Persistence
-
-**Goal:** Save and load progress across server restarts.
-
-**Files touched:** `collection/CollectionProgressData.java`
-
-### Schema
-
-```java
-public class CollectionProgressData extends SavedData {
-    // UUID -> (Category -> Set<ResourceLocation>)
-    private final Map<UUID, Map<CollectionCategory, Set<ResourceLocation>>> progress;
-
-    public static final SavedDataType<CollectionProgressData> TYPE =
-        new SavedDataType<>(
-            "collection_progress",        // file name: collection_progress.dat
-            CollectionProgressData::new,
-            /* Codec */ ...,
-            /* DataFixTypes */ null
-        );
-}
-```
-
-### Tasks
-
-- [ ] Implement `SavedDataType` with a `Codec` that serializes `Map<UUID, Map<CollectionCategory, Set<ResourceLocation>>>`
-  - Use `Codec.unboundedMap(Codec.STRING.xmap(UUID::fromString, UUID::toString), ...)`
-- [ ] `markCollected` must call `setDirty()` — required for write-back
-- [ ] Static accessor:
-  ```java
-  public static CollectionProgressData get(MinecraftServer server) {
-      return server.overworld().getDataStorage()
-          .computeIfAbsent(TYPE, "collection_progress");
-  }
-  ```
-- [ ] Add "Together" mode toggle in config: when `true`, all marks write to a fixed UUID `SERVER_UUID = new UUID(0,0)` instead of the player UUID; UI reads from `SERVER_UUID`
-
-### Gotchas
-
-- **`setDirty()` is mandatory** — without it, data is lost on shutdown.
-- `SavedData` is loaded lazily; `computeIfAbsent` handles creation.
-- For "Together" mode, if switching modes mid-world, merge existing per-player sets into `SERVER_UUID` on first load (one-shot migration).
-
-**Done when:** Collect item → `/stop` → restart → item still shows as collected.
-
----
-
-## 6. Phase 5 — Networking
-
-**Goal:** Sync master list + progress to client.
-
-**Files touched:** `network/NetworkHandler.java`, `network/SyncMasterListPayload.java`, `network/SyncProgressPayload.java`, `client/ClientPayloadHandler.java`
-
-### Payload definitions
-
-```java
-public record SyncMasterListPayload(
-    Map<CollectionCategory, List<CollectibleEntry>> entries
-) implements CustomPacketPayload {
-    public static final Type<SyncMasterListPayload> TYPE = ...;
-    public static final StreamCodec<RegistryFriendlyByteBuf, SyncMasterListPayload> STREAM_CODEC = ...;
-}
-
-public record SyncProgressPayload(
-    Set<ResourceLocation> collected,   // flat across all categories for simplicity
-    boolean togetherMode
-) implements CustomPacketPayload { ... }
-```
-
-### Tasks
-
-- [ ] `NetworkHandler.register(RegisterPayloadHandlersEvent event)` — call `event.registrar("1")` and register both payloads with `playToClient`
-- [ ] `ClientPayloadHandler` — annotated `@EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)` — registers `RegisterClientPayloadHandlersEvent` handlers
-- [ ] Send `SyncMasterListPayload` on `PlayerEvent.PlayerLoggedInEvent` and after `/reload`
-- [ ] Send `SyncProgressPayload` on login + after each debounced progress mark
-- [ ] `ClientCollectionCache` — static `Map` on client populated by payload handlers; UI reads from this, not from the server
-
-### Packet size guard
-
-- Calculate approximate size before send: `entries.size() * ~64 bytes`. If > 900 KB, split into chunks with an index field (add `chunkIndex` / `chunkCount` to `SyncMasterListPayload`). Implement chunking only if needed — the current mod's list is small enough.
-
-**Done when:** Join a server, open screen, all entries render with correct collected state.
-
----
-
-## 7. Phase 6 — GUI
-
-**Goal:** Tabbed collection screen with filtering, tooltips, and animations.
-
-**Files touched:** everything under `client/`
-
-### 6a. Screen skeleton
-
-- [ ] `CollectionMenu extends AbstractContainerMenu` — no slots, just a marker + open/close
-- [ ] Register `MenuType<CollectionMenu>` via `DeferredRegister<MenuType<?>>`
-- [ ] `RegisterMenuScreensEvent` → `event.register(COLLECTION_MENU.get(), CollectionScreen::new)`
-- [ ] Keybind: `RegisterKeyMappingsEvent` in `client/`; default `KEY_C` (unbound by default — user binds it)
-
-### 6b. Tabs
-
-- [ ] `TabButton` widget extending `AbstractWidget`, renders icon + label
-- [ ] Horizontal row at top of screen; active tab highlighted
-- [ ] Tab switch sets `activeCategory` and resets scroll position
-
-### 6c. Entry grid
-
-- [ ] `EntryGrid` widget — grid layout, `cellSize = 20`, 9 columns, scrollable vertical
-- [ ] Render icons:
-  - Items/Blocks: `guiGraphics.renderItem(new ItemStack(item), x, y)`
-  - Entities: use spawn egg `ItemStack` as v1 fallback; see "Future" below for 3D rendering
-- [ ] Scroll via `mouseScrolled(double, double, double, double)`
-
-### 6d. Uncollected effect
-
-- [ ] If `!cache.isCollected(id)`: render icon at alpha `0.3f`
-- [ ] Draw a subtle overlay (`0x80808080`) via `guiGraphics.fill(...)` after the item render
-
-### 6e. Search & tooltips
-
-- [ ] `EditBox` at top for search; `keyPressed` updates `searchQuery`
-- [ ] Filter displayed entries: `entry.displayName().getString().toLowerCase().contains(query.toLowerCase())`
-- [ ] On hover: `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
-
-### 6f. Animations
-
-- [ ] Track `long lastTabSwitchMillis` — animate tab underline with a `fraction = (now - lastSwitch) / 200.0` easing curve
-- [ ] Entry appearance: fade alpha `Math.min(1f, (now - lastRenderChange) / 300f)`
-
-### Future enhancement (v0.2+)
-
-- [ ] 3D entity previews using `Fancy Entity Renderer` (NeoForge 1.21.1 compatible) or NeoForge **PiP** (`PictureInPictureRenderer`)
-
-**Done when:** Screen opens with keybind, shows all categories in tabs, collected vs. uncollected visually distinct, search filters live.
-
----
-
-## 8. Phase 7 — Category Expansion
-
-**Goal:** Replicate the pipeline (Phase 2 → 3 → 5) for every remaining category.
-
-**Pattern per category** (mechanical, ~1 hour each once Items work):
-
-| Step | Action |
+| Fact | Detail |
 |---|---|
-| 1 | Add entry to `CollectionCategory` enum (if not already) |
-| 2 | Add registry iteration block in `CollectibleRegistry.rebuild` |
-| 3 | Add event listener in `ProgressEvents` **or** tick handler in `TickEvents` |
-| 4 | Add tab in `CollectionScreen` |
-| 5 | Add category-specific icon renderer (entity: spawn egg; effect: effect texture; enchantment: enchanted book) |
+| `BuiltInRegistries.STRUCTURE` **does not exist** | Structures are a datapack registry. Access via `level.registryAccess().registryOrThrow(Registries.STRUCTURE)`. |
+| `BuiltInRegistries.BIOME`, `MOB_EFFECT`, `ENCHANTMENT` **do exist** | Usable directly. |
+| Advancement list is **not** in a registry | Query `ServerAdvancementManager` via `server.getAdvancements()`. |
 
-**Order of implementation (lowest complexity first):**
+### Known limitations
 
-1. `BLOCKS` — identical to `ITEMS`
-2. `ENCHANTMENTS` — same pickup event, different extraction
-3. `EFFECTS` — single event, easy
-4. `ADVANCEMENTS` — needs `AdvancementManager` query, filter recipes
-5. `ENTITIES` — variant enumeration
-6. `BIOMES` — tick polling
-7. `STRUCTURES` — tick polling, most complex due to structure tags
+- ⚠️ Entity variants (sheep colors, villager professions) not yet enumerated — deferred to Phase 7.
+- ⚠️ Fallback display names for non-tab entries use `id.toString()` — deferred polish.
 
 ---
 
-## 9. Phase 8 — Polish & Release
+## 4. Phase 3 — Event Detection ✅
 
-### Tasks
+**Goal:** Mark entries as collected when the player interacts.
 
-- [ ] **Config** (`config/CollectionConfig.java`) via `ModConfigSpec`:
-  - `enabledCategories` — `List<CollectionCategory>`
-  - `blacklistIds` — `List<String>` (regex)
-  - `togetherModeDefault` — `boolean`
-  - `pollIntervalTicks` — `int`, default `20`
-- [ ] **Commands** (`/collection`):
-  - `/collection open` — opens screen (client)
-  - `/collection reset <player>` — clears progress (op 2)
-  - `/collection stats` — prints per-category counts (op 2)
-- [ ] **Localization** — `assets/itemcollector/lang/en_us.json` with all category + GUI strings
-- [ ] **Advancement integration** — optionally award a custom advancement when a category reaches 100%
-- [ ] **Performance profile** — verify polling cost with 10 entities in loaded chunks
-- [ ] **CI** — GitHub Actions workflow (already drafted) builds on push; artifact upload with `if-no-files-found: error`
-- [ ] **Release checklist**:
-  - [ ] Bump `mod_version` in `gradle.properties`
-  - [ ] Update `CHANGELOG.md`
-  - [ ] Tag commit `v<version>`
-  - [ ] Attach `build/libs/itemcollector-<version>.jar` to GitHub release
-  - [ ] Publish to Modrinth / CurseForge with screenshots
+### Files
 
----
+- `event/ProgressEvents.java` — instant events
+- `event/TickEvents.java` — polling (biomes, structures)
 
-## 10. Reference Tables
+### Event table (final)
 
-### NeoForge event classes used
-
-| Event | Bus | Side | Purpose |
-|---|---|---|---|
-| `RegisterPayloadHandlersEvent` | Mod | BOTH | Register network payloads |
-| `RegisterClientPayloadHandlersEvent` | Mod | CLIENT | Register client-side payload handlers |
-| `RegisterMenuScreensEvent` | Mod | CLIENT | Bind `MenuType` → `Screen` |
-| `RegisterKeyMappingsEvent` | Mod | CLIENT | Register keybind |
-| `ServerStartedEvent` | Game | DEDICATED_SERVER | Trigger master list build |
-| `PlayerEvent.PlayerLoggedInEvent` | Game | BOTH | Send initial sync |
-| `ItemEntityPickupEvent.Post` | Game | BOTH | Item detection |
-| `BlockEvent.BreakEvent` | Game | BOTH | Block detection |
-| `LivingDeathEvent` | Game | BOTH | Entity detection |
-| `AdvancementEvent.AdvancementEarnEvent` | Game | BOTH | Advancement detection |
-| `PlayerTickEvent.Post` | Game | BOTH | Biome/structure polling |
-
-### `BuiltInRegistries` fields used
-
-```
-ITEM, BLOCK, ENTITY_TYPE, BIOME, STRUCTURE, MOB_EFFECT, ENCHANTMENT
-```
-
-### SavedData identifiers
-
-| Data | File | Attached to |
+| Category | Event | Notes |
 |---|---|---|
-| `collection_progress` | `<world>/data/collection_progress.dat` | Overworld `ServerLevel` |
+| `ITEMS` | `ItemEntityPickupEvent.Post` | Uses `getOriginalStack()` |
+| `BLOCKS` | `BlockEvent.BreakEvent` | `isClientSide()` guard |
+| `ENTITIES` | `LivingDeathEvent` | ⚠️ See limitation below |
+| `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
+| `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
+| `ADVANCEMENTS` | `AdvancementEvent.AdvancementEarnEvent` | Filter `display().isEmpty()` |
+| `BIOMES` | `PlayerTickEvent.Post` (throttled) | Every 20 ticks |
+| `STRUCTURES` | `PlayerTickEvent.Post` (throttled) | Every 20 ticks |
+
+### [CORRECTED] — API facts for 1.21.1
+
+| Fact | Detail |
+|---|---|
+| `Structure.unwrapKey()` **does not exist** | Use `BuiltInRegistries`-equivalent via `level.registryAccess().registryOrThrow(Registries.STRUCTURE).getKey(structure)`. |
+| `ResourceLocation` constructor is deprecated | Use `ResourceLocation.parse(String)` when reading from NBT. |
+| `LOGGER.debug()` is **silenced by default** | For testing, use `LOGGER.info(...)` or launch with `-Dforge.logging.console.level=debug`. |
+
+### ⚠️ Known limitations
+
+1. **Entity attribution** — `LivingDeathEvent` doesn't know which player landed the kill. Current code marks for all `ServerPlayer`s within 32 blocks. Refinement options:
+   - Read `event.getSource().getEntity()` and, if a `ServerPlayer`, mark only for that player.
+   - Fall back to proximity for environmental kills.
+2. **Tick batching** — `TickEvents` sends a separate `SyncProgressPayload` for every new biome/structure. Should be batched once per second in Phase 8.
+
+---
+
+## 5. Phase 4 — Persistence ✅
+
+**Goal:** Save and load progress across restarts.
+
+### File
+
+- `collection/CollectionProgressData.java`
+
+### [CORRECTED] — 1.21.1 `SavedData` API
+
+The original plan referenced `SavedDataType` and a codec-based schema. **Neither exists in NeoForge 1.21.1.** The corrected approach:
+
+| Original plan | Actual 1.21.1 API |
+|---|---|
+| `SavedDataType<T>` | `SavedData.Factory<T>(Supplier<T> constructor, BiFunction<CompoundTag, HolderLookup.Provider, T> loader)` |
+| `Codec<T>` for serialization | Manual `CompoundTag` read/write in `save(CompoundTag, HolderLookup.Provider)` and a static `load(...)` |
+| `new SavedDataType<>("name", supplier, codec)` | `new SavedData.Factory<>(constructor, loader)` |
+
+### Final schema (on disk)
+
+```
+<world>/data/collection_progress.dat
+└── progress: {
+      "<player-uuid>": {
+        "ITEMS": ["minecraft:stone", ...],
+        "BLOCKS": [...],
+        ...
+      }
+    }
+```
+
+### Contract
+
+- `markCollected(UUID, CollectionCategory, ResourceLocation)` returns `true` if newly added.
+- `setDirty()` is called **only when a value is newly added**. Required — silent failure otherwise.
+- Access via `CollectionProgressData.get(server)`; uses `server.overworld().getDataStorage().computeIfAbsent(FACTORY, "collection_progress")`.
+
+### ⚠️ Open question
+
+- "Together" mode (shared progress across players) **not yet implemented** — deferred to Phase 8.
+
+---
+
+## 6. Phase 5 — Networking ✅
+
+**Goal:** Sync master list and progress to client.
+
+### Files
+
+- `network/SyncMasterListPayload.java`
+- `network/SyncProgressPayload.java`
+- `network/NetworkHandler.java` — registers payloads via `RegisterPayloadHandlersEvent`
+- `client/ClientPayloadHandler.java` — receives payloads, populates static caches
+- `event/ServerLifecycleEvents.java` — sends both payloads on `PlayerEvent.PlayerLoggedInEvent` and after progress changes via `sendProgressUpdate(ServerPlayer)`
 
 ### Payload IDs
 
 | ID | Direction | Trigger |
 |---|---|---|
-| `itemcollector:sync_master_list` | S → C | Login, `/reload` |
-| `itemcollector:sync_progress` | S → C | Login, progress mark (debounced) |
+| `itemcollector:sync_master_list` | S → C | Player login |
+| `itemcollector:sync_progress` | S → C | Player login + every successful `mark` (debouncing pending) |
+
+### Client-side caches
+
+| Field | Type | Populated by |
+|---|---|---|
+| `ClientPayloadHandler.masterList` | `Map<CollectionCategory, List<CollectibleEntry>>` | `SyncMasterListPayload` |
+| `ClientPayloadHandler.collected` | `Set<ResourceLocation>` | `SyncProgressPayload` |
+
+These are the **only** data sources the GUI must read. No client-side registry iteration.
+
+### [CORRECTED] — EventBusSubscriber nuances
+
+- **Mod-bus events** (`RegisterPayloadHandlersEvent`) still require `bus = EventBusSubscriber.Bus.MOD`. This is **not** deprecated.
+- **Game-bus events** (`ServerStartedEvent`, `PlayerEvent.*`, all `ProgressEvents`, `TickEvents`) should **omit** the `bus` parameter. The `Bus.GAME` value is deprecated for removal.
+
+### Implementation contract
+
+- `ServerLifecycleEvents.buildProgressPayload(ServerPlayer)` — reusable helper.
+- `ServerLifecycleEvents.sendProgressUpdate(ServerPlayer)` — called from `ProgressEvents.mark(...)` and both branches of `TickEvents`.
+- `ProgressEvents.mark(...)` pushes a payload **only** when `markCollected` returns `true`.
+
+### ⚠️ Pending optimization (Phase 8)
+
+- Debounce payloads in `TickEvents` — currently fires up to 1/sec/player for biome, 1/sec/player for structure.
+- Optional chunking if `SyncMasterListPayload` exceeds ~900 KB (only relevant with very large modpacks).
 
 ---
 
-## 11. Known Gotchas (consolidated)
+## 7. Phase 6 — GUI ⏳ **(NEXT)**
 
-1. **Registry access timing** — never during `RegisterEvent` or mod constructor.
-2. **`BlockEvent.BreakEvent` fires on both sides** — guard with `!level.isClientSide()`.
-3. **`SavedData.setDirty()` is mandatory** — silent failure otherwise.
-4. **`ItemEntityPickupEvent.Post.getOriginalStack()`** — not `getCurrentStack()`.
-5. **Advancement IDs include recipes** — filter `Advancement#display().isEmpty()`.
-6. **Entity variants** — Sheep color, Villager profession, Axolotl color, etc. all need explicit enumeration.
-7. **Structure polling** — `player.blockPosition()` misses walking-past cases; acceptable for v1.
-8. **`neoforge.mods.toml` expansion** — every `${...}` placeholder must exist in `processResources.replaceProperties` map (see prior build failure).
-9. **`gradlew` must be committed** — otherwise CI fails with `chmod: cannot access 'gradlew'`.
-10. **`ResourceKey` import** — `net.minecraft.resources.ResourceKey` is required for `BuiltInRegistries.X.entrySet()` loops.
+**Goal:** Tabbed collection screen.
+
+### 6a. Screen skeleton — ⏳ todo
+
+- [ ] `client/CollectionMenu extends AbstractContainerMenu` (no slots)
+- [ ] `DeferredRegister<MenuType<?>>` for `MENU_TYPES`
+- [ ] Register via `MenuType<>(CollectionMenu::new, FeatureFlags.DEFAULT_FLAGS)`
+- [ ] `RegisterMenuScreensEvent` on the **mod bus** (`Bus.MOD`) → `event.register(...)`
+- [ ] `RegisterKeyMappingsEvent` on the **mod bus** → keybind (default `C`, unbound by default)
+- [ ] Keybind handler on `ClientTickEvent` opens the screen via `Minecraft.getInstance().setScreen(...)`
+
+### 6b. Tabs — ⏳ todo
+
+- [ ] `client/widget/TabButton` extends `AbstractWidget`
+- [ ] Renders icon + localized label per `CollectionCategory`
+- [ ] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
+
+### 6c. Entry grid — ⏳ todo
+
+- [ ] `client/widget/EntryGrid` — 9 columns, `cellSize = 20`, vertical scroll
+- [ ] Render item/block icons via `guiGraphics.renderItem(new ItemStack(item), x, y)`
+- [ ] Entities rendered as **spawn eggs** (v1 fallback; PiP is Phase 8)
+- [ ] `mouseScrolled(double, double, double, double)` for scroll
+
+### 6d. Uncollected effect — ⏳ todo
+
+- [ ] Read `ClientPayloadHandler.collected.contains(entry.id())`
+- [ ] If **not** collected: alpha `0.3f` on item render, overlay `fill(x, y, x+16, y+16, 0x80808080)`
+
+### 6e. Search & tooltips — ⏳ todo
+
+- [ ] `EditBox` at top; filter on `entry.displayName().getString().toLowerCase().contains(query)`
+- [ ] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
+
+### 6f. Animations — ⏳ todo
+
+- [ ] Tab underline eases over 200 ms after `lastTabSwitchMillis`
+- [ ] Entry fade-in over 300 ms after category/scroll change
+
+### Data source contract (critical for AI contributors)
+
+> The GUI **must not** call any registry or server API directly. It reads exclusively from:
+> - `ClientPayloadHandler.masterList` (what exists)
+> - `ClientPayloadHandler.collected` (what the player has)
 
 ---
 
-## 12. Open Questions
+## 8. Phase 7 — Category Expansion ⏳
+
+Fill the placeholder lists and wire additional handlers. Each category is independent.
+
+| Order | Category | Registry / source | Detection |
+|---|---|---|---|
+| 1 | `BLOCKS` | already ✅ | already ✅ |
+| 2 | `ENCHANTMENTS` | already ✅ | already ✅ |
+| 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
+| 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
+| 5 | `ENTITIES` | `BuiltInRegistries.ENTITY_TYPE` + variant enumeration | ⚠️ refine attribution |
+| 6 | `BIOMES` | `BuiltInRegistries.BIOME` | already ✅ |
+| 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
+
+**Steps per new category:**
+
+1. Add registry iteration block in `CollectibleRegistry.rebuild`.
+2. For entities, enumerate variants by inspecting `Entity` subclasses (sheep, villager, axolotl, etc.) and creating one `CollectibleEntry` per variant with `extraData` populated.
+3. Wire detection if not already done (most are done; entity variants need `LivingDeathEvent` extension).
+4. No GUI change needed — `CollectionCategory.values()` drives tabs automatically.
+
+---
+
+## 9. Phase 8 — Polish & Release ⏳
+
+### Config
+
+- [ ] `config/CollectionConfig.java` via `ModConfigSpec`
+- [ ] Fields: `enabledCategories`, `blacklistIds` (regex), `togetherModeDefault`, `pollIntervalTicks` (default `20`)
+
+### Commands
+
+- [ ] `/collection open` — opens the GUI (client)
+- [ ] `/collection reset <player>` — clears progress (op 2)
+- [ ] `/collection stats` — prints per-category counts (op 2)
+- [ ] `/collection dump` — dumps master list (debug, op 4)
+
+### Optimizations
+
+- [ ] Debounce `sendProgressUpdate` — batch all new marks from one tick into a single payload
+- [ ] Chunk `SyncMasterListPayload` if serialized size > 900 KB
+- [ ] Cache structure-tag lookups per chunk to avoid repeated `getStructureWithPieceAt` calls
+
+### Features
+
+- [ ] "Together" mode (shared progress)
+- [ ] 3D entity previews via Fancy Entity Renderer or NeoForge PiP
+- [ ] Advancement award on 100% category completion
+
+### Release
+
+- [ ] Localization (`lang/en_us.json`)
+- [ ] `CHANGELOG.md`
+- [ ] Bump `mod_version`
+- [ ] GitHub tag + release with JAR
+- [ ] Publish to Modrinth / CurseForge with screenshots
+
+---
+
+## 10. Consolidated Gotcha List
+
+> Ordered by likelihood of hitting again. All entries are verified against NeoForge 1.21.1 / 21.1.264.
+
+1. **`SavedDataType` does not exist** → use `SavedData.Factory` + manual `save`/`load`.
+2. **`BuiltInRegistries.STRUCTURE` does not exist** → use `RegistryAccess.registryOrThrow(Registries.STRUCTURE)`.
+3. **`Structure.unwrapKey()` does not exist** → get key from registry via `.getKey(structure)`.
+4. **`@EventBusSubscriber.Bus.GAME` is deprecated** → omit the `bus` parameter for game-bus events.
+5. **`@EventBusSubscriber.Bus.MOD` is not deprecated** → still required for mod-bus events.
+6. **`LOGGER.debug()` is silenced by default** → use `LOGGER.info` or JVM arg `-Dforge.logging.console.level=debug`.
+7. **`setDirty()` is mandatory** on `SavedData` after every mutation, otherwise data is silently lost.
+8. **Registry access before registration completes** → always query in `ServerStartedEvent` or later.
+9. **`ResourceLocation` constructor deprecated** → use `ResourceLocation.parse(String)`.
+10. **`ResourceKey` import** → `net.minecraft.resources.ResourceKey` for `BuiltInRegistries.X.entrySet()`.
+11. **`neoforge.mods.toml` expansion** → every `${...}` placeholder must exist in `processResources.replaceProperties`.
+12. **`gradlew` must be committed** → otherwise CI fails at `chmod +x gradlew`.
+13. **`BlockEvent.BreakEvent` fires on both sides** → guard with `!level.isClientSide()`.
+14. **`ItemEntityPickupEvent.Post` fires only on server** → `isClientSide()` check is redundant but harmless.
+15. **`ComponentSerialization.STREAM_CODEC`** — required import in `SyncMasterListPayload`.
+
+---
+
+## 11. Open Questions
 
 | # | Question | Status |
 |---|---|---|
-| Q1 | Should "Together" mode be per-world or per-server? | Open — default per-world |
-| Q2 | Chunked sync for large packs (ATM10)? | Defer until packet size > 900 KB observed |
-| Q3 | 3D entity preview via Fancy Entity Renderer vs. PiP? | Defer to v0.2 |
-| Q4 | Behavior on mod removal (entry no longer in registry)? | Keep in progress data, mark as "orphaned" in UI |
-| Q5 | Compatibility with `/reload` (datapack changes)? | Rebuild master list, retain progress for surviving IDs |
+| Q1 | "Together" mode: per-world or per-server? | Open — default per-world |
+| Q2 | Chunked master-list sync for very large modpacks? | Defer until observed |
+| Q3 | 3D entity preview: Fancy Entity Renderer vs. PiP? | Defer to Phase 8 |
+| Q4 | Behavior on mod removal (orphaned entries)? | Keep in progress, mark as orphaned in UI |
+| Q5 | `/reload` handling for datapack-driven categories (advancements, structures)? | Rebuild master list, retain surviving progress |
 
 ---
 
-## 13. Milestones
+## 12. Milestones
 
-| Milestone | Definition of Done |
-|---|---|
-| **M1 — Data model** | `CollectibleEntry`, `CollectionCategory`, `CollectionProgressData` compile |
-| **M2 — Items end-to-end** | Pick up item → log confirms mark → restart persists → debug command lists it |
-| **M3 — UI MVP** | Screen opens, shows item tab, collected vs. uncollected distinct |
-| **M4 — Networking complete** | Multiplayer: two players see separate progress; "Together" merges |
-| **M5 — All categories** | Every category in Phase 7 works end-to-end |
-| **M6 — v1.0.0 release** | Config, commands, localization, CI, Modrinth page |
+| Milestone | Definition of Done | Status |
+|---|---|---|
+| **M1 — Data model** | `CollectibleEntry`, `CollectionCategory`, `CollectionProgressData` compile | ✅ |
+| **M2 — Items end-to-end** | Pick up → log confirms → restart persists → network syncs | ✅ |
+| **M3 — UI MVP** | Screen opens, item tab renders, collected vs. uncollected distinct | ⏳ Phase 6 |
+| **M4 — Networking complete** | Multiplayer: two players see separate progress; "Together" merges | 🚧 (multiplayer works; "Together" pending) |
+| **M5 — All categories** | Every category functional end-to-end | ⏳ Phase 7 |
+| **M6 — v1.0.0** | Config, commands, localization, CI, Modrinth page | ⏳ Phase 8 |
+
+---
+
+## 13. Resumption Checklist for a New Contributor (Human or AI)
+
+Before writing any code in this repo:
+
+1. Read `ItemCollectorMod.java` — confirms `MODID` and `LOGGER`.
+2. Read `collection/CollectionCategory.java` and `collection/CollectibleEntry.java` — the shared vocabulary.
+3. Read `collection/CollectibleRegistry.java` — the current master list builder; all categories are populated here eventually.
+4. Read `event/ServerLifecycleEvents.java` — the only place that sends network payloads on join. **Add new payload triggers here.**
+5. Read `client/ClientPayloadHandler.java` — the **only** data source the GUI is allowed to read from.
+6. Read section **§10 Consolidated Gotcha List** before touching any `SavedData`, `Registry`, or `EventBusSubscriber` code.
+7. To resume work, start at **§7 (Phase 6a)**.
