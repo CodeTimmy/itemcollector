@@ -14,6 +14,8 @@ import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -77,38 +79,64 @@ public final class ProgressEvents {
 
     @SubscribeEvent
     public static void onFishBucketed(PlayerInteractEvent.EntityInteract event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.isCanceled() || player.isSpectator()) return;
-        if (!(event.getTarget() instanceof AbstractFish fish) || !fish.isAlive()) return;
-        if (!event.getItemStack().is(Items.BUCKET)) return;
+        if (event.isCanceled()) return;
+        markFishBucketInteraction(event.getEntity(), event.getTarget(), event.getItemStack());
+    }
 
-        final ResourceLocation fishId = BuiltInRegistries.ENTITY_TYPE.getKey(fish.getType());
-        if (fishId != null) {
-            mark(player, CollectionCategory.ENTITIES, fishId);
-        }
-        markItemStack(player, event.getItemStack());
-        markItemStack(player, fish.getBucketItemStack());
+    @SubscribeEvent
+    public static void onFishBucketedSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        if (event.isCanceled()) return;
+        markFishBucketInteraction(event.getEntity(), event.getTarget(), event.getItemStack());
     }
 
     @SubscribeEvent
     public static void onFluidBucketed(PlayerInteractEvent.RightClickBlock event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.isCanceled() || !event.getItemStack().is(Items.BUCKET)) return;
+        if (event.isCanceled()) return;
+        markFluidBucketInteraction(event.getEntity(), event.getItemStack(), event.getPos());
+    }
 
-        final var level = event.getLevel();
-        final var pos = event.getPos();
-        final var state = level.getBlockState(pos);
+    @SubscribeEvent
+    public static void onFluidBucketedInAir(PlayerInteractEvent.RightClickItem event) {
+        if (event.isCanceled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!event.getItemStack().is(Items.BUCKET)) return;
+
+        final HitResult hitResult = player.pick(5.0D, 0.0F, false);
+        if (hitResult instanceof BlockHitResult blockHit && hitResult.getType() == HitResult.Type.BLOCK) {
+            markFluidBucketInteraction(player, event.getItemStack(), blockHit.getBlockPos());
+        }
+    }
+
+    private static void markFishBucketInteraction(final Player player, final net.minecraft.world.entity.Entity target,
+                                                  final ItemStack heldItem) {
+        if (!(player instanceof ServerPlayer serverPlayer) || serverPlayer.isSpectator()) return;
+        if (!(target instanceof AbstractFish fish) || !fish.isAlive()) return;
+        if (!heldItem.is(Items.BUCKET)) return;
+
+        final ResourceLocation fishId = BuiltInRegistries.ENTITY_TYPE.getKey(fish.getType());
+        if (fishId != null) {
+            mark(serverPlayer, CollectionCategory.ENTITIES, fishId);
+        }
+        markItemStack(serverPlayer, heldItem);
+        markItemStack(serverPlayer, fish.getBucketItemStack());
+    }
+
+    private static void markFluidBucketInteraction(final Player player, final ItemStack heldItem,
+                                                   final net.minecraft.core.BlockPos pos) {
+        if (!(player instanceof ServerPlayer serverPlayer) || !heldItem.is(Items.BUCKET)) return;
+
+        final var state = serverPlayer.level().getBlockState(pos);
         final var fluid = state.getFluidState();
         if (!fluid.isSource()) return;
 
         if (state.is(Blocks.WATER) && fluid.is(Fluids.WATER)) {
-            markBlock(player, Blocks.WATER);
-            markItemStack(player, event.getItemStack());
-            markItemStack(player, new ItemStack(Items.WATER_BUCKET));
+            markBlock(serverPlayer, Blocks.WATER);
+            markItemStack(serverPlayer, heldItem);
+            markItemStack(serverPlayer, new ItemStack(Items.WATER_BUCKET));
         } else if (state.is(Blocks.LAVA) && fluid.is(Fluids.LAVA)) {
-            markBlock(player, Blocks.LAVA);
-            markItemStack(player, event.getItemStack());
-            markItemStack(player, new ItemStack(Items.LAVA_BUCKET));
+            markBlock(serverPlayer, Blocks.LAVA);
+            markItemStack(serverPlayer, heldItem);
+            markItemStack(serverPlayer, new ItemStack(Items.LAVA_BUCKET));
         }
     }
 

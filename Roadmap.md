@@ -145,8 +145,8 @@ graph TD
 
 | Category | Event | Notes |
 |---|---|---|
-| `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta, bucket interactions | Empty bucket and filled water/lava buckets count when scooping source fluids; fish bucket results count when catching `AbstractFish` |
-| `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `PlayerInteractEvent.RightClickBlock` | Mark mining on server-side `Action.START`; empty-bucket pickup also marks source water/lava blocks |
+| `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta, `PlayerInteractEvent` bucket hooks | Cover `EntityInteract` and `EntityInteractSpecific` for fish; cover `RightClickBlock` and `RightClickItem` for source-fluid pickup |
+| `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `RightClickBlock`, `RightClickItem` | Mark mining on server-side `Action.START`; empty-bucket pickup marks source water/lava blocks via either block-target or item-use ray trace |
 | `ENTITIES` | `LivingDeathEvent` | ⚠️ See limitation below |
 | `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
 | `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
