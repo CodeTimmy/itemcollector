@@ -243,7 +243,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ### [CORRECTED] — EventBusSubscriber nuances
 
-- **Mod-bus events** (`RegisterPayloadHandlersEvent`) still require `bus = EventBusSubscriber.Bus.MOD`. This is **not** deprecated.
+- **Mod-bus events** (`RegisterPayloadHandlersEvent`) need explicit mod-bus registration. With annotation-based subscribers, `bus = EventBusSubscriber.Bus.MOD` currently selects the correct bus, but NeoForge 21.1.264 emits removal warnings for `bus()` and `Bus`; migrate to explicit event-bus registration in a separate cleanup.
 - **Game-bus events** (`ServerStartedEvent`, `PlayerEvent.*`, all `ProgressEvents`, `TickEvents`) should **omit** the `bus` parameter. The `Bus.GAME` value is deprecated for removal.
 
 ### Implementation contract
@@ -281,7 +281,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 - [x] Renders icon + localized label per `CollectionCategory`
 - [x] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
 
-> Editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` was skipped, so confirm the build before continuing to 6c.
+> The CI-reported missing narration override and `onClick` visibility errors are fixed; editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` was skipped, so confirm the build before continuing to 6c.
 
 ### 6c. Entry grid — ⏳ todo
 
@@ -380,7 +380,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 2. **`BuiltInRegistries.STRUCTURE` does not exist** → use `RegistryAccess.registryOrThrow(Registries.STRUCTURE)`.
 3. **`Structure.unwrapKey()` does not exist** → get key from registry via `.getKey(structure)`.
 4. **`@EventBusSubscriber.Bus.GAME` is deprecated** → omit the `bus` parameter for game-bus events.
-5. **`@EventBusSubscriber.Bus.MOD` is not deprecated** → still required for mod-bus events.
+5. **Mod-bus subscriber selection** → `bus = EventBusSubscriber.Bus.MOD` selects the mod bus for annotation-based subscribers, but NeoForge 21.1.264 warns that `bus()` and `Bus` are deprecated for removal; explicit event-bus registration is the migration path.
 6. **`LOGGER.debug()` is silenced by default** → use `LOGGER.info` or JVM arg `-Dforge.logging.console.level=debug`.
 7. **`setDirty()` is mandatory** on `SavedData` after every mutation, otherwise data is silently lost.
 8. **Registry access before registration completes** → always query in `ServerStartedEvent` or later.

@@ -4,6 +4,7 @@ import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -62,8 +63,13 @@ public final class TabButton extends AbstractWidget {
     }
 
     @Override
-    protected void onClick(final double mouseX, final double mouseY) {
+    public void onClick(final double mouseX, final double mouseY) {
         onSelect.accept(category);
+    }
+
+    @Override
+    protected void updateWidgetNarration(final NarrationElementOutput narrationElementOutput) {
+        defaultButtonNarrationText(narrationElementOutput);
     }
 
     private static String categoryTranslationKey(final CollectionCategory category) {
