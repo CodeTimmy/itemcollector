@@ -1,9 +1,9 @@
 package io.github.codetimmy.itemcollector.client.widget;
 
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -29,6 +29,7 @@ public final class TabButton extends AbstractWidget {
             final Consumer<CollectionCategory> onSelect
     ) {
         super(x, y, width, height, Component.translatable(categoryTranslationKey(category)));
+        setTooltip(Tooltip.create(getMessage()));
         this.category = category;
         this.icon = new ItemStack(iconFor(category));
         this.selected = selected;
@@ -46,20 +47,12 @@ public final class TabButton extends AbstractWidget {
     @Override
     protected void renderWidget(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTick) {
         final int background = selected ? 0xFF526657 : isHoveredOrFocused() ? 0xFF3B4440 : 0xFF292D2B;
-        final int foreground = selected ? 0xFFFFFFFF : 0xFFD8D8D8;
         guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, background);
         if (selected) {
             guiGraphics.fill(getX(), getY(), getX() + width, getY() + 2, 0xFFA8C49E);
         }
 
-        guiGraphics.renderItem(icon, getX() + (width - 16) / 2, getY() + 2);
-        guiGraphics.drawCenteredString(
-                Minecraft.getInstance().font,
-                getMessage(),
-                getX() + width / 2,
-                getY() + 21,
-                foreground
-        );
+        guiGraphics.renderItem(icon, getX() + (width - 16) / 2, getY() + (height - 16) / 2);
     }
 
     @Override

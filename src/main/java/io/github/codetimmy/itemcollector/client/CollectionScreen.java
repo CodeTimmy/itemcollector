@@ -31,15 +31,18 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
         tabButtons.clear();
 
         final CollectionCategory[] categories = CollectionCategory.values();
+        final int buttonWidth = 40;
+        final int buttonHeight = 36;
+        final int gap = 6;
+        final int rowWidth = categories.length * buttonWidth + (categories.length - 1) * gap;
+        final int startX = leftPos + (imageWidth - rowWidth) / 2;
         for (int index = 0; index < categories.length; index++) {
             final CollectionCategory category = categories[index];
-            final int column = index % 4;
-            final int row = index / 4;
             final TabButton button = new TabButton(
-                    leftPos + 8 + column * 97,
-                    topPos + 24 + row * 40,
-                    93,
-                    36,
+                startX + index * (buttonWidth + gap),
+                topPos + 30,
+                buttonWidth,
+                buttonHeight,
                     category,
                     category == activeCategory,
                     this::selectCategory

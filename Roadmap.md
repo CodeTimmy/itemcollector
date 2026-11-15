@@ -278,7 +278,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 ### 6b. Tabs — 🚧 implementation complete; Gradle validation pending
 
 - [x] `client/widget/TabButton` extends `AbstractWidget`
-- [x] Renders icon + localized label per `CollectionCategory`
+- [x] Renders an icon per `CollectionCategory` with its localized label as a hover tooltip
 - [x] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
 
 > The CI-reported missing narration override and `onClick` visibility errors are fixed; editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` was skipped, so confirm the build before continuing to 6c.
