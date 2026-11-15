@@ -1,7 +1,9 @@
 package io.github.codetimmy.itemcollector.client;
 
 import io.github.codetimmy.itemcollector.client.widget.TabButton;
+import io.github.codetimmy.itemcollector.client.widget.EntryGrid;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
+import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -15,7 +17,7 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
 
     private final List<TabButton> tabButtons = new ArrayList<>();
     private CollectionCategory activeCategory = CollectionCategory.ITEMS;
-    private double scrollOffset;
+    private EntryGrid entryGrid;
     private long lastTabSwitchMillis;
 
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
@@ -51,6 +53,10 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             tabButtons.add(button);
             addRenderableWidget(button);
         }
+
+        entryGrid = new EntryGrid(leftPos + 8, topPos + 84, imageWidth - 16, 44);
+        entryGrid.setEntries(ClientPayloadHandler.masterList.getOrDefault(activeCategory, List.of()));
+        addRenderableWidget(entryGrid);
     }
 
     private void selectCategory(final CollectionCategory category) {
@@ -58,7 +64,7 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             return;
         }
         activeCategory = category;
-        scrollOffset = 0;
+        entryGrid.setEntries(ClientPayloadHandler.masterList.getOrDefault(category, List.of()));
         lastTabSwitchMillis = Util.getMillis();
         tabButtons.forEach(button -> button.setSelected(button.category() == category));
     }
@@ -68,11 +74,19 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     }
 
     public double scrollOffset() {
-        return scrollOffset;
+        return entryGrid == null ? 0 : entryGrid.scrollOffset();
     }
 
     public long lastTabSwitchMillis() {
         return lastTabSwitchMillis;
+    }
+
+    @Override
+    public boolean mouseScrolled(final double mouseX, final double mouseY, final double scrollX, final double scrollY) {
+        if (entryGrid != null && entryGrid.isMouseOver(mouseX, mouseY) && entryGrid.scroll(scrollY)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -88,13 +102,5 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     protected void renderLabels(final GuiGraphics guiGraphics, final int mouseX, final int mouseY) {
         guiGraphics.drawString(font, title, 8, 8, 0xFFFFFFFF, false);
         guiGraphics.fill(8, 78, imageWidth - 8, 79, 0xFF59645C);
-        guiGraphics.drawString(
-            font,
-            Component.translatable("collection.category." + activeCategory.name().toLowerCase()),
-            10,
-            88,
-            0xFFFFFFFF,
-            false
-        );
     }
 }

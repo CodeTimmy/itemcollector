@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a and 6b implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6c implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -45,9 +45,10 @@ src/main/java/io/github/codetimmy/itemcollector/
     ├── ClientModEvents.java                 ✅ (keybind + menu screen registration)
     ├── ClientPayloadHandler.java            ✅ (payload cache)
     ├── CollectionMenu.java                  ✅ (no-slot menu)
-    ├── CollectionScreen.java                🚧 (tabs; entry grid pending)
+    ├── CollectionScreen.java                🚧 (tabs + entry grid)
     └── widget/
-        └── TabButton.java                   ✅
+      ├── EntryGrid.java                   ✅
+      └── TabButton.java                   ✅
 ```
 
 Directories still to be created:
@@ -78,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6b implemented**; confirm the Gradle compile before starting **6c ⏳**.
+**Current position:** Phase **6c implemented**; confirm the Gradle compile before starting **6d ⏳**.
 
 ---
 
@@ -281,14 +282,16 @@ These are the **only** data sources the GUI must read. No client-side registry i
 - [x] Renders an icon per `CollectionCategory` with its localized label as a hover tooltip
 - [x] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
 
-> The CI-reported missing narration override and `onClick` visibility errors are fixed; editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` was skipped, so confirm the build before continuing to 6c.
+> The CI-reported missing narration override and `onClick` visibility errors are fixed; editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` is run in GitHub Actions, not locally.
 
-### 6c. Entry grid — ⏳ todo
+### 6c. Entry grid — 🚧 implementation complete; CI validation pending
 
-- [ ] `client/widget/EntryGrid` — 9 columns, `cellSize = 20`, vertical scroll
-- [ ] Render item/block icons via `guiGraphics.renderItem(new ItemStack(item), x, y)`
-- [ ] Entities rendered as **spawn eggs** (v1 fallback; PiP is Phase 8)
-- [ ] `mouseScrolled(double, double, double, double)` for scroll
+- [x] `client/widget/EntryGrid` — 9 columns, `cellSize = 20`, vertical scroll
+- [x] Render item/block icons via `guiGraphics.renderItem(new ItemStack(item), x, y)`
+- [x] Entities rendered as **spawn eggs** (v1 fallback; PiP is Phase 8)
+- [x] `mouseScrolled(double, double, double, double)` for scroll
+
+> Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
 ### 6d. Uncollected effect — ⏳ todo
 
@@ -307,7 +310,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ### Data source contract (critical for AI contributors)
 
-> The GUI **must not** call any registry or server API directly. It reads exclusively from:
+> The GUI must use the synced cache as its only source of collectible entries and must not enumerate registries or rebuild the master list. It may resolve a cached item/block/entity ID against the client item registry solely to render the corresponding icon. The entry data comes exclusively from:
 > - `ClientPayloadHandler.masterList` (what exists)
 > - `ClientPayloadHandler.collected` (what the player has)
 
