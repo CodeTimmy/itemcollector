@@ -11,6 +11,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,9 +40,9 @@ public final class CollectibleRegistry {
         buildCreativeOrderedCategory(CollectionCategory.BLOCKS, BuiltInRegistries.BLOCK, Blocks.AIR);
 
         buildEntities();
+        buildBiomes();
 
         // Placeholders for later phases (see Phase 7 of the roadmap)
-        MASTER_LIST.put(CollectionCategory.BIOMES, List.of());
         MASTER_LIST.put(CollectionCategory.STRUCTURES, List.of());
         MASTER_LIST.put(CollectionCategory.EFFECTS, List.of());
         MASTER_LIST.put(CollectionCategory.ENCHANTMENTS, List.of());
@@ -69,6 +70,17 @@ public final class CollectibleRegistry {
             ));
         }
         MASTER_LIST.put(CollectionCategory.ENTITIES, entries);
+    }
+
+    private static void buildBiomes() {
+        final List<CollectibleEntry> entries = new ArrayList<>();
+        for (Map.Entry<ResourceKey<Biome>, Biome> entry : BuiltInRegistries.BIOME.entrySet()) {
+            final ResourceLocation id = entry.getKey().location();
+            final Component displayName = Component.translatable(
+                    "biome." + id.getNamespace() + "." + id.getPath());
+            entries.add(new CollectibleEntry(id, displayName, CollectionCategory.BIOMES));
+        }
+        MASTER_LIST.put(CollectionCategory.BIOMES, entries);
     }
 
     // ------------------------------------------------------------------

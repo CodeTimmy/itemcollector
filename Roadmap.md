@@ -336,7 +336,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
-| 6 | `BIOMES` | `BuiltInRegistries.BIOME` | already ✅ |
+| 6 | `BIOMES` | `BuiltInRegistries.BIOME` | populated; discovered on throttled player tick and synced |
 | 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
 
 **Steps per new category:**
