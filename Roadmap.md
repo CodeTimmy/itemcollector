@@ -333,7 +333,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 |---|---|---|---|
 | 1 | `BLOCKS` | already ✅ | already ✅ |
 | 2 | `ENCHANTMENTS` | already ✅ | already ✅ |
-| 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
+| 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | populated with localized effect names; detected on application and synced |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
 | 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced |

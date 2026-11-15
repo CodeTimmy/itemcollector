@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -44,9 +45,9 @@ public final class CollectibleRegistry {
         buildEntities();
         buildBiomes(server);
         buildStructures(server);
+        buildEffects();
 
         // Placeholders for later phases (see Phase 7 of the roadmap)
-        MASTER_LIST.put(CollectionCategory.EFFECTS, List.of());
         MASTER_LIST.put(CollectionCategory.ENCHANTMENTS, List.of());
 
         buildAdvancements(server);
@@ -98,6 +99,18 @@ public final class CollectibleRegistry {
             ));
         }
         MASTER_LIST.put(CollectionCategory.STRUCTURES, entries);
+    }
+
+    private static void buildEffects() {
+        final List<CollectibleEntry> entries = new ArrayList<>();
+        for (Map.Entry<ResourceKey<MobEffect>, MobEffect> entry : BuiltInRegistries.MOB_EFFECT.entrySet()) {
+            entries.add(new CollectibleEntry(
+                    entry.getKey().location(),
+                    entry.getValue().getDisplayName(),
+                    CollectionCategory.EFFECTS
+            ));
+        }
+        MASTER_LIST.put(CollectionCategory.EFFECTS, entries);
     }
 
     // ------------------------------------------------------------------
