@@ -336,7 +336,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
-| 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced; foliage color is synced in entry `extraData` and tinted onto custom `biome_sapling.png` |
+| 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced |
 | 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
 
 **Steps per new category:**
@@ -356,6 +356,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 - [ ] Per-category enable/disable switches
 - [ ] Regex-based item exclusion
 - [ ] Explicit item-ID exclusion list
+- [ ] Configure which biomes each block is assigned to for biome collection/display
 - [ ] Collected/uncollected appearance options: invert the default colors or configure custom colors for each state
 - [ ] Other fields: `togetherModeDefault`, `pollIntervalTicks` (default `20`)
 

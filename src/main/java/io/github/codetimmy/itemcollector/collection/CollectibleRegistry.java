@@ -2,7 +2,6 @@ package io.github.codetimmy.itemcollector.collection;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -14,7 +13,6 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.FoliageColor;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,12 +80,7 @@ public final class CollectibleRegistry {
             final ResourceLocation id = entry.getKey().location();
             final Component displayName = Component.translatable(
                     "biome." + id.getNamespace() + "." + id.getPath());
-            final int foliageColor = entry.getValue().getSpecialEffects()
-                .getFoliageColorOverride()
-                .orElse(FoliageColor.getDefaultColor());
-            final CompoundTag extraData = new CompoundTag();
-            extraData.putInt("foliage_color", foliageColor);
-            entries.add(new CollectibleEntry(id, displayName, CollectionCategory.BIOMES, extraData));
+            entries.add(new CollectibleEntry(id, displayName, CollectionCategory.BIOMES));
         }
         MASTER_LIST.put(CollectionCategory.BIOMES, entries);
     }

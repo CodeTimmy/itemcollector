@@ -25,10 +25,8 @@ public final class EntryGrid extends AbstractWidget {
     private static final int CELL_GAP = 2;
     private static final int SCROLLBAR_WIDTH = 5;
     private static final int SCROLLBAR_GAP = 4;
-    private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+        private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "itemcollector", "textures/gui/unknown.png");
-    private static final ResourceLocation BIOME_SAPLING_TEXTURE = ResourceLocation.fromNamespaceAndPath(
-            "itemcollector", "textures/gui/biome_sapling.png");
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
@@ -91,19 +89,7 @@ public final class EntryGrid extends AbstractWidget {
                 guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE,
                         hovered ? 0xFF46534A : 0xFF292D2B);
                 final Item icon = iconFor(entry);
-                if (entry.category() == CollectionCategory.BIOMES) {
-                    final int foliageColor = entry.extraData() == null
-                            ? 0xFFFFFF
-                            : entry.extraData().getInt("foliage_color");
-                    guiGraphics.setColor(
-                            ((foliageColor >> 16) & 0xFF) / 255.0F,
-                            ((foliageColor >> 8) & 0xFF) / 255.0F,
-                            (foliageColor & 0xFF) / 255.0F,
-                            1.0F
-                    );
-                    guiGraphics.blit(BIOME_SAPLING_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
-                    guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
-                } else if (icon == null) {
+                if (icon == null) {
                     guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
                 } else {
                     guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
