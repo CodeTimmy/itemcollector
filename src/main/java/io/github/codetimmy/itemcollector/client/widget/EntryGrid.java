@@ -1,5 +1,6 @@
 package io.github.codetimmy.itemcollector.client.widget;
 
+import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
 import io.github.codetimmy.itemcollector.collection.CollectibleEntry;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import net.minecraft.client.gui.GuiGraphics;
@@ -74,10 +75,14 @@ public final class EntryGrid extends AbstractWidget {
                 final int x = startX + column * cellStep;
                 final boolean hovered = mouseX >= x && mouseX < x + CELL_SIZE
                         && mouseY >= y && mouseY < y + CELL_SIZE;
+                final CollectibleEntry entry = entries.get(entryIndex);
                 guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, hovered ? 0xFF46534A : 0xFF292D2B);
-                guiGraphics.renderItem(iconFor(entries.get(entryIndex)), x + 2, y + 2);
+                guiGraphics.renderItem(iconFor(entry), x + 2, y + 2);
+                if (!ClientPayloadHandler.collected.contains(entry.id())) {
+                    guiGraphics.fill(x + 2, y + 2, x + 18, y + 18, 0x80808080);
+                }
                 if (hovered) {
-                    hoveredEntry = entries.get(entryIndex);
+                    hoveredEntry = entry;
                 }
             }
         }

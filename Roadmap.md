@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6c implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6d implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -79,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6c implemented**; confirm the Gradle compile before starting **6d ⏳**.
+**Current position:** Phase **6d implemented**; confirm the GitHub Actions build before starting **6e ⏳**.
 
 ---
 
@@ -293,15 +293,19 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
-### 6d. Uncollected effect — ⏳ todo
+### 6d. Uncollected effect — 🚧 implementation complete; CI validation pending
 
-- [ ] Read `ClientPayloadHandler.collected.contains(entry.id())`
-- [ ] If **not** collected: alpha `0.3f` on item render, overlay `fill(x, y, x+16, y+16, 0x80808080)`
+- [x] Read `ClientPayloadHandler.collected.contains(entry.id())`
+- [x] If **not** collected: visually dim the icon with a translucent gray overlay
+
+> Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
 ### 6e. Search & tooltips — ⏳ todo
 
 - [ ] `EditBox` at top; filter on `entry.displayName().getString().toLowerCase().contains(query)`
 - [ ] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
+- [ ] Add a toggle to show or hide entries already present in `ClientPayloadHandler.collected`; default to showing all entries
+- [ ] Keep visible entries in deterministic alphabetical order: vanilla (`minecraft`) first by display name A–Z, then mod namespaces A–Z, with entries within each mod also sorted by display name A–Z
 
 ### 6f. Animations — ⏳ todo
 
