@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -16,10 +18,20 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @EventBusSubscriber(modid = ItemCollectorMod.MODID)
 public final class ProgressEvents {
+
+    private static final Map<UUID, Map<ResourceLocation, Integer>> OPEN_CHEST_ITEMS = new HashMap<>();
 
     // ------------------------------------------------------------------
     // ITEMS — fired after the item is added to the player's inventory
@@ -47,15 +59,61 @@ public final class ProgressEvents {
         }
     }
 
-    // ------------------------------------------------------------------
-    // BLOCKS — fired when a player breaks a block
-    // ------------------------------------------------------------------
     @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (event.getLevel().isClientSide()) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+    public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        markItemStack(player, event.getCrafting());
+    }
 
-        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(event.getState().getBlock());
+    @SubscribeEvent
+    public static void onVillagerTrade(TradeWithVillagerEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        markItemStack(player, event.getMerchantOffer().getResult());
+    }
+
+    @SubscribeEvent
+    public static void onChestOpened(PlayerContainerEvent.Open event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getContainer() instanceof ChestMenu menu)) return;
+        OPEN_CHEST_ITEMS.put(player.getUUID(), countChestItems(menu));
+    }
+
+    @SubscribeEvent
+    public static void onChestClosed(PlayerContainerEvent.Close event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getContainer() instanceof ChestMenu menu)) return;
+
+        recordChestLoot(player, menu);
+        OPEN_CHEST_ITEMS.remove(player.getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onChestLootTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(player.containerMenu instanceof ChestMenu menu)) return;
+        recordChestLoot(player, menu);
+    }
+
+    private static void recordChestLoot(final ServerPlayer player, final ChestMenu menu) {
+        final Map<ResourceLocation, Integer> before = OPEN_CHEST_ITEMS.get(player.getUUID());
+        if (before == null) return;
+
+        final Map<ResourceLocation, Integer> after = countChestItems(menu);
+        before.forEach((id, count) -> {
+            if (after.getOrDefault(id, 0) < count) {
+                mark(player, CollectionCategory.ITEMS, id);
+            }
+        });
+        OPEN_CHEST_ITEMS.put(player.getUUID(), after);
+    }
+
+    @SubscribeEvent
+    public static void onBlockMiningStarted(PlayerInteractEvent.LeftClickBlock event) {
+        if (event.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(
+                player.level().getBlockState(event.getPos()).getBlock());
         if (id != null) {
             mark(player, CollectionCategory.BLOCKS, id);
         }
@@ -122,5 +180,28 @@ public final class ProgressEvents {
             // Push the updated progress to the client so the GUI refreshes live.
             ServerLifecycleEvents.sendProgressUpdate(player);
         }
+    }
+
+    private static void markItemStack(ServerPlayer player, ItemStack stack) {
+        if (stack.isEmpty()) return;
+        final ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id != null) {
+            mark(player, CollectionCategory.ITEMS, id);
+        }
+    }
+
+    private static Map<ResourceLocation, Integer> countChestItems(final AbstractContainerMenu menu) {
+        final Map<ResourceLocation, Integer> counts = new HashMap<>();
+        final int containerSlotCount = Math.max(0, menu.slots.size() - 36);
+        for (int slotIndex = 0; slotIndex < containerSlotCount; slotIndex++) {
+            final ItemStack stack = menu.slots.get(slotIndex).getItem();
+            if (stack.isEmpty()) continue;
+
+            final ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            if (id != null) {
+                counts.merge(id, stack.getCount(), Integer::sum);
+            }
+        }
+        return counts;
     }
 }

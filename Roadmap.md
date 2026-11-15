@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6f implemented; GitHub Actions validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–6 ✅ complete. Bug-fix interruption in progress before Phase 7. Phases 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -68,7 +68,7 @@ graph TD
     P2 --> P3[Phase 3 ✅ Event Detection]
     P3 --> P4[Phase 4 ✅ Persistence]
     P4 --> P5[Phase 5 ✅ Networking]
-    P5 --> P6[Phase 6 🚧 GUI]
+    P5 --> P6[Phase 6 ✅ GUI]
     P6 --> P7[Phase 7 ⏳ Category Expansion]
     P7 --> P8[Phase 8 ⏳ Polish & Release]
 
@@ -79,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6f implemented**; confirm the GitHub Actions build before starting Phase 7.
+**Current position:** Phase **6 complete**. Temporarily paused for bug fixes before starting Phase 7.
 
 ---
 
@@ -145,8 +145,8 @@ graph TD
 
 | Category | Event | Notes |
 |---|---|---|
-| `ITEMS` | `ItemEntityPickupEvent.Post` | Uses `getOriginalStack()` |
-| `BLOCKS` | `BlockEvent.BreakEvent` | `isClientSide()` guard |
+| `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta | Chest contents are compared while the menu is open and on close; only removed item types count |
+| `BLOCKS` | `PlayerInteractEvent.LeftClickBlock` | Mark only on server-side `Action.START`, not on break completion; unbreakable blocks such as bedrock count |
 | `ENTITIES` | `LivingDeathEvent` | ⚠️ See limitation below |
 | `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
 | `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
@@ -260,11 +260,11 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ---
 
-## 7. Phase 6 — GUI 🚧 **(IN PROGRESS)**
+## 7. Phase 6 — GUI ✅ **(COMPLETE)**
 
 **Goal:** Tabbed collection screen.
 
-### 6a. Screen skeleton — 🚧 implementation complete; Gradle validation pending
+### 6a. Screen skeleton — ✅ complete
 
 - [x] `client/CollectionMenu extends AbstractContainerMenu` (no slots)
 - [x] `DeferredRegister<MenuType<?>>` for `MENU_TYPES`
@@ -276,7 +276,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors, and the user confirmed the keybind opens the screen. `gradlew compileJava` has not been rerun since the CI compile fixes.
 
-### 6b. Tabs — 🚧 implementation complete; Gradle validation pending
+### 6b. Tabs — ✅ complete
 
 - [x] `client/widget/TabButton` extends `AbstractWidget`
 - [x] Renders an icon per `CollectionCategory` with its localized label as a hover tooltip
@@ -284,7 +284,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > The CI-reported missing narration override and `onClick` visibility errors are fixed; editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` is run in GitHub Actions, not locally.
 
-### 6c. Entry grid — 🚧 implementation complete; CI validation pending
+### 6c. Entry grid — ✅ complete
 
 - [x] `client/widget/EntryGrid` — responsive up to 17 columns, `cellSize = 20`, vertical scroll
 - [x] Render item/block icons via `guiGraphics.renderItem(new ItemStack(item), x, y)`
@@ -293,14 +293,14 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
-### 6d. Uncollected effect — 🚧 implementation complete; CI validation pending
+### 6d. Uncollected effect — ✅ complete
 
 - [x] Read `ClientPayloadHandler.collected.contains(entry.id())`
 - [x] If **not** collected: visually dim the icon with a translucent gray overlay
 
 > Editor diagnostics report no errors. Build validation is performed by GitHub Actions.
 
-### 6e. Search, ordering & collected toggle — 🚧 implementation complete; CI validation pending
+### 6e. Search, ordering & collected toggle — ✅ complete
 
 - [x] `EditBox` at top; filter on `entry.displayName().getString().toLowerCase().contains(query)`
 - [x] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
@@ -310,7 +310,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors, and the English localization JSON parses. Build validation is performed by GitHub Actions.
 
-### 6f. Display polish — 🚧 implementation complete; CI validation pending
+### 6f. Display polish — ✅ complete
 
 - [x] Keep category selection static; do not animate the tab underline or grid contents (hover feedback remains)
 - [x] Resolve raw item/block ID fallbacks to localized game names in the active language, including vanilla IDs such as `minecraft:brick`
@@ -406,7 +406,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 10. **`ResourceKey` import** → `net.minecraft.resources.ResourceKey` for `BuiltInRegistries.X.entrySet()`.
 11. **`neoforge.mods.toml` expansion** → every `${...}` placeholder must exist in `processResources.replaceProperties`.
 12. **`gradlew` must be committed** → otherwise CI fails at `chmod +x gradlew`.
-13. **`BlockEvent.BreakEvent` fires on both sides** → guard with `!level.isClientSide()`.
+13. **`BlockEvent.BreakEvent` fires on both sides** → if used elsewhere, guard with `!level.isClientSide()`; collection progress uses server-side `PlayerInteractEvent.LeftClickBlock.Action.START` instead.
 14. **`ItemEntityPickupEvent.Post` fires only on server** → `isClientSide()` check is redundant but harmless.
 15. **`ComponentSerialization.STREAM_CODEC`** — required import in `SyncMasterListPayload`.
 
@@ -430,7 +430,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 |---|---|---|
 | **M1 — Data model** | `CollectibleEntry`, `CollectionCategory`, `CollectionProgressData` compile | ✅ |
 | **M2 — Items end-to-end** | Pick up → log confirms → restart persists → network syncs | ✅ |
-| **M3 — UI MVP** | Screen opens, item tab renders, collected vs. uncollected distinct | ⏳ Phase 6 |
+| **M3 — UI MVP** | Screen opens, item tab renders, collected vs. uncollected distinct | ✅ |
 | **M4 — Networking complete** | Multiplayer: two players see separate progress; "Together" merges | 🚧 (multiplayer works; "Together" pending) |
 | **M5 — All categories** | Every category functional end-to-end | ⏳ Phase 7 |
 | **M6 — v1.0.0** | Config, commands, localization, CI, Modrinth page | ⏳ Phase 8 |
@@ -447,4 +447,3 @@ Before writing any code in this repo:
 4. Read `event/ServerLifecycleEvents.java` — the only place that sends network payloads on join. **Add new payload triggers here.**
 5. Read `client/ClientPayloadHandler.java` — the **only** data source the GUI is allowed to read from.
 6. Read section **§10 Consolidated Gotcha List** before touching any `SavedData`, `Registry`, or `EventBusSubscriber` code.
-7. To resume work, start at **§7 (Phase 6a)**.
