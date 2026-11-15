@@ -27,6 +27,7 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
     private EditBox searchBox;
     private Button collectedToggle;
     private boolean showCollected = true;
+    private boolean draggingScrollbar;
     private long lastTabSwitchMillis;
 
     public CollectionScreen(final CollectionMenu menu, final Inventory inventory, final Component title) {
@@ -137,6 +138,37 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (button == 0 && entryGrid != null && entryGrid.beginScrollbarDrag(mouseX, mouseY)) {
+            draggingScrollbar = true;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(final double mouseX, final double mouseY, final int button,
+                                final double dragX, final double dragY) {
+        if (draggingScrollbar && button == 0 && entryGrid != null) {
+            entryGrid.dragScrollbarTo(mouseY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
+        if (button == 0 && draggingScrollbar) {
+            draggingScrollbar = false;
+            if (entryGrid != null) {
+                entryGrid.endScrollbarDrag();
+            }
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

@@ -306,7 +306,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 - [x] Hover → `guiGraphics.renderTooltip(font, entry.displayName(), mouseX, mouseY)`
 - [x] Add a toggle to show or hide entries already present in `ClientPayloadHandler.collected`; default to showing all entries
 - [x] Keep visible entries in deterministic alphabetical order: vanilla (`minecraft`) first by display name A–Z, then mod namespaces A–Z, with entries within each mod also sorted by display name A–Z
-- [x] Add a visible scrollbar to the right side of the GUI with click/drag support
+- [x] Add a visible scrollbar to the right side of the GUI with click/drag support; capture dragging at the screen level and forward movement to the grid
 
 > Editor diagnostics report no errors, and the English localization JSON parses. Build validation is performed by GitHub Actions.
 

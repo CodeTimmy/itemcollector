@@ -25,7 +25,7 @@ public final class EntryGrid extends AbstractWidget {
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
-    private boolean draggingScrollbar;
+    private boolean scrollbarDragActive;
     private double scrollbarDragOffset;
 
     public EntryGrid(final int x, final int y, final int width, final int height) {
@@ -104,43 +104,30 @@ public final class EntryGrid extends AbstractWidget {
         defaultButtonNarrationText(narrationElementOutput);
     }
 
-    @Override
-    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+    public boolean beginScrollbarDrag(final double mouseX, final double mouseY) {
         final int scrollbarX = scrollbarX();
-        if (button == 0 && mouseX >= scrollbarX - 2 && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2
+        if (mouseX >= scrollbarX - 2 && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2
                 && mouseY >= getY() && mouseY <= getY() + height && maxScrollOffset() > 0) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            final int thumbHeight = scrollbarThumbHeight();
+            final int thumbY = scrollbarThumbY();
+            scrollbarDragActive = true;
+            scrollbarDragOffset = mouseY >= thumbY && mouseY <= thumbY + thumbHeight
+                    ? mouseY - thumbY
+                    : thumbHeight / 2.0;
+            setScrollFromMouse(mouseY);
+            return true;
         }
         return false;
     }
 
-    @Override
-    public void onClick(final double mouseX, final double mouseY) {
-        final int thumbHeight = scrollbarThumbHeight();
-        final int thumbY = scrollbarThumbY();
-        draggingScrollbar = true;
-        scrollbarDragOffset = mouseY >= thumbY && mouseY <= thumbY + thumbHeight
-                ? mouseY - thumbY
-                : thumbHeight / 2.0;
-        setScrollFromMouse(mouseY);
-    }
-
-    @Override
-    public boolean mouseDragged(final double mouseX, final double mouseY, final int button,
-                                final double dragX, final double dragY) {
-        if (draggingScrollbar && button == 0) {
+    public void dragScrollbarTo(final double mouseY) {
+        if (scrollbarDragActive) {
             setScrollFromMouse(mouseY);
-            return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
-    @Override
-    public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
-        if (button == 0) {
-            draggingScrollbar = false;
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
+    public void endScrollbarDrag() {
+        scrollbarDragActive = false;
     }
 
     private double maxScrollOffset() {
