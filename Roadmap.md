@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 ⏳ next. Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -41,7 +41,11 @@ src/main/java/io/github/codetimmy/itemcollector/
 │   ├── SyncMasterListPayload.java           ✅
 │   └── SyncProgressPayload.java             ✅
 └── client/
-    └── ClientPayloadHandler.java            ✅ (only the payload cache; no GUI yet)
+  ├── ClientEvents.java                     ✅ (keybind handler)
+  ├── ClientModEvents.java                 ✅ (keybind + menu screen registration)
+  ├── ClientPayloadHandler.java            ✅ (payload cache)
+  ├── CollectionMenu.java                  ✅ (no-slot menu)
+  └── CollectionScreen.java                ✅ (screen skeleton)
 ```
 
 Directories still to be created:
@@ -62,18 +66,18 @@ graph TD
     P2 --> P3[Phase 3 ✅ Event Detection]
     P3 --> P4[Phase 4 ✅ Persistence]
     P4 --> P5[Phase 5 ✅ Networking]
-    P5 --> P6[Phase 6 ⏳ GUI]
+    P5 --> P6[Phase 6 🚧 GUI]
     P6 --> P7[Phase 7 ⏳ Category Expansion]
     P7 --> P8[Phase 8 ⏳ Polish & Release]
 
-    P6a[6a: Screen skeleton] --> P6b[6b: Tabs]
+    P6a[6a: Screen skeleton ✅] --> P6b[6b: Tabs]
     P6b --> P6c[6c: Entry grid]
     P6c --> P6d[6d: Uncollected effect]
     P6d --> P6e[6e: Search & tooltips]
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Between **Phase 5 ✅** and **Phase 6a ⏳**.
+**Current position:** Phase **6a implemented**; confirm the Gradle compile before starting **6b ⏳**.
 
 ---
 
@@ -254,18 +258,21 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ---
 
-## 7. Phase 6 — GUI ⏳ **(NEXT)**
+## 7. Phase 6 — GUI 🚧 **(IN PROGRESS)**
 
 **Goal:** Tabbed collection screen.
 
-### 6a. Screen skeleton — ⏳ todo
+### 6a. Screen skeleton — 🚧 implementation complete; Gradle validation pending
 
-- [ ] `client/CollectionMenu extends AbstractContainerMenu` (no slots)
-- [ ] `DeferredRegister<MenuType<?>>` for `MENU_TYPES`
-- [ ] Register via `MenuType<>(CollectionMenu::new, FeatureFlags.DEFAULT_FLAGS)`
-- [ ] `RegisterMenuScreensEvent` on the **mod bus** (`Bus.MOD`) → `event.register(...)`
-- [ ] `RegisterKeyMappingsEvent` on the **mod bus** → keybind (default `C`, unbound by default)
-- [ ] Keybind handler on `ClientTickEvent` opens the screen via `Minecraft.getInstance().setScreen(...)`
+- [x] `client/CollectionMenu extends AbstractContainerMenu` (no slots)
+- [x] `DeferredRegister<MenuType<?>>` for `MENU_TYPES`
+- [x] Register via `MenuType<>(CollectionMenu::new, FeatureFlags.DEFAULT_FLAGS)`
+- [x] `RegisterMenuScreensEvent` on the **mod bus** (`Bus.MOD`) → `event.register(...)`
+- [x] `RegisterKeyMappingsEvent` on the **mod bus** → keybind (default `C`, unbound by default)
+- [x] Keybind handler on `ClientTickEvent` opens the screen via `Minecraft.getInstance().setScreen(...)`
+- [x] Minimal `CollectionScreen` and English labels for the screen and Controls menu
+
+> Editor diagnostics report no errors. `gradlew compileJava` was skipped, so validate the build before continuing to 6b.
 
 ### 6b. Tabs — ⏳ todo
 
