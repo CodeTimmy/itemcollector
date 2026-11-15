@@ -1,6 +1,7 @@
 package io.github.codetimmy.itemcollector.collection;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -40,7 +41,7 @@ public final class CollectibleRegistry {
         buildCreativeOrderedCategory(CollectionCategory.BLOCKS, BuiltInRegistries.BLOCK, Blocks.AIR);
 
         buildEntities();
-        buildBiomes();
+        buildBiomes(server);
 
         // Placeholders for later phases (see Phase 7 of the roadmap)
         MASTER_LIST.put(CollectionCategory.STRUCTURES, List.of());
@@ -72,9 +73,10 @@ public final class CollectibleRegistry {
         MASTER_LIST.put(CollectionCategory.ENTITIES, entries);
     }
 
-    private static void buildBiomes() {
+    private static void buildBiomes(final MinecraftServer server) {
         final List<CollectibleEntry> entries = new ArrayList<>();
-        for (Map.Entry<ResourceKey<Biome>, Biome> entry : BuiltInRegistries.BIOME.entrySet()) {
+        final var biomeRegistry = server.overworld().registryAccess().registryOrThrow(Registries.BIOME);
+        for (Map.Entry<ResourceKey<Biome>, Biome> entry : biomeRegistry.entrySet()) {
             final ResourceLocation id = entry.getKey().location();
             final Component displayName = Component.translatable(
                     "biome." + id.getNamespace() + "." + id.getPath());

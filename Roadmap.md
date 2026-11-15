@@ -122,7 +122,7 @@ graph TD
 | Fact | Detail |
 |---|---|
 | `BuiltInRegistries.STRUCTURE` **does not exist** | Structures are a datapack registry. Access via `level.registryAccess().registryOrThrow(Registries.STRUCTURE)`. |
-| `BuiltInRegistries.BIOME`, `MOB_EFFECT`, `ENCHANTMENT` **do exist** | Usable directly. |
+| `BuiltInRegistries.BIOME` **does not exist** | Biomes are accessed via `level.registryAccess().registryOrThrow(Registries.BIOME)`. `BuiltInRegistries.MOB_EFFECT` and `ENCHANTMENT` do exist. |
 | Advancement list is **not** in a registry | Query `ServerAdvancementManager` via `server.getAdvancements()`. |
 
 ### Known limitations
@@ -336,7 +336,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
-| 6 | `BIOMES` | `BuiltInRegistries.BIOME` | populated; discovered on throttled player tick and synced |
+| 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced |
 | 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
 
 **Steps per new category:**
