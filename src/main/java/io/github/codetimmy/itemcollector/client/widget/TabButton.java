@@ -48,9 +48,6 @@ public final class TabButton extends AbstractWidget {
     protected void renderWidget(final GuiGraphics guiGraphics, final int mouseX, final int mouseY, final float partialTick) {
         final int background = selected ? 0xFF526657 : isHoveredOrFocused() ? 0xFF3B4440 : 0xFF292D2B;
         guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, background);
-        if (selected) {
-            guiGraphics.fill(getX(), getY(), getX() + width, getY() + 2, 0xFFA8C49E);
-        }
 
         guiGraphics.renderItem(icon, getX() + (width - 16) / 2, getY() + (height - 16) / 2);
     }

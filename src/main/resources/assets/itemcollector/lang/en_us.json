@@ -12,5 +12,6 @@
   "collection.category.advancements": "Advancements",
   "collection.search": "Search collection...",
   "collection.show_collected.on": "Collected: shown",
-  "collection.show_collected.off": "Collected: hidden"
+  "collection.show_collected.off": "Collected: hidden",
+  "tooltip.itemcollector.entry": "%s - %s"
 }

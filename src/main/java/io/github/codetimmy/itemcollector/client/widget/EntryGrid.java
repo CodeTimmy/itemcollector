@@ -9,9 +9,11 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.Util;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.fml.ModList;
 
 import java.util.List;
 
@@ -22,11 +24,14 @@ public final class EntryGrid extends AbstractWidget {
     private static final int CELL_GAP = 2;
     private static final int SCROLLBAR_WIDTH = 5;
     private static final int SCROLLBAR_GAP = 4;
+        private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+            "itemcollector", "textures/gui/unknown.png");
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
     private boolean scrollbarDragActive;
     private double scrollbarDragOffset;
+        private long contentChangeMillis = Util.getMillis();
 
     public EntryGrid(final int x, final int y, final int width, final int height) {
         super(x, y, width, height, Component.empty());
@@ -35,6 +40,7 @@ public final class EntryGrid extends AbstractWidget {
     public void setEntries(final List<CollectibleEntry> entries) {
         this.entries = entries;
         scrollOffset = 0;
+        contentChangeMillis = Util.getMillis();
     }
 
     public double scrollOffset() {
@@ -52,6 +58,7 @@ public final class EntryGrid extends AbstractWidget {
             return false;
         }
         scrollOffset = nextOffset;
+        contentChangeMillis = Util.getMillis();
         return true;
     }
 
@@ -65,6 +72,7 @@ public final class EntryGrid extends AbstractWidget {
         final int firstRow = (int) (scrollOffset / cellStep);
         final int rowOffset = (int) (scrollOffset % cellStep);
         final int visibleRows = (height + cellStep - 1) / cellStep + 1;
+        final float fade = Math.min(1.0F, Math.max(0.0F, (Util.getMillis() - contentChangeMillis) / 300.0F));
         CollectibleEntry hoveredEntry = null;
 
         guiGraphics.enableScissor(getX(), getY(), getX() + width, getY() + height);
@@ -81,10 +89,18 @@ public final class EntryGrid extends AbstractWidget {
                 final boolean hovered = mouseX >= x && mouseX < x + CELL_SIZE
                         && mouseY >= y && mouseY < y + CELL_SIZE;
                 final CollectibleEntry entry = entries.get(entryIndex);
-                guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, hovered ? 0xFF46534A : 0xFF292D2B);
-                guiGraphics.renderItem(iconFor(entry), x + 2, y + 2);
+                guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE,
+                    withOpacity(hovered ? 0xFF46534A : 0xFF292D2B, fade));
+                final Item icon = iconFor(entry);
+                guiGraphics.setColor(1.0F, 1.0F, 1.0F, fade);
+                if (icon == null) {
+                    guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
+                } else {
+                    guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
+                }
+                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
                 if (!ClientPayloadHandler.collected.contains(entry.id())) {
-                    guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x80808080);
+                    guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, withOpacity(0x80808080, fade));
                 }
                 if (hovered) {
                     hoveredEntry = entry;
@@ -95,7 +111,7 @@ public final class EntryGrid extends AbstractWidget {
         renderScrollbar(guiGraphics);
         if (hoveredEntry != null) {
             guiGraphics.renderTooltip(net.minecraft.client.Minecraft.getInstance().font,
-                    displayNameFor(hoveredEntry), mouseX, mouseY);
+                    tooltipFor(hoveredEntry), mouseX, mouseY);
         }
     }
 
@@ -179,6 +195,11 @@ public final class EntryGrid extends AbstractWidget {
         return Math.max(height, rowCount * (CELL_SIZE + CELL_GAP) - CELL_GAP);
     }
 
+    private static int withOpacity(final int color, final float opacity) {
+        final int alpha = Math.round(((color >>> 24) & 0xFF) * opacity);
+        return (color & 0x00FFFFFF) | (alpha << 24);
+    }
+
     private void setScrollFromMouse(final double mouseY) {
         final int travel = height - scrollbarThumbHeight();
         final double maxOffset = maxScrollOffset();
@@ -188,11 +209,16 @@ public final class EntryGrid extends AbstractWidget {
         }
         final double thumbTop = Math.max(0, Math.min(travel, mouseY - getY() - scrollbarDragOffset));
         scrollOffset = thumbTop / travel * maxOffset;
+        contentChangeMillis = Util.getMillis();
     }
 
-    private static ItemStack iconFor(final CollectibleEntry entry) {
-        final Item item = switch (entry.category()) {
-            case ITEMS, BLOCKS -> BuiltInRegistries.ITEM.getOptional(entry.id()).orElse(Items.BARRIER);
+    private static Item iconFor(final CollectibleEntry entry) {
+        return switch (entry.category()) {
+            case ITEMS -> BuiltInRegistries.ITEM.getOptional(entry.id()).orElse(null);
+            case BLOCKS -> BuiltInRegistries.BLOCK.getOptional(entry.id())
+                    .map(block -> block.asItem())
+                    .filter(item -> item != Items.AIR)
+                    .orElse(null);
             case ENTITIES -> BuiltInRegistries.ITEM.getOptional(spawnEggId(entry.id())).orElse(Items.SPAWNER);
             case BIOMES -> Items.OAK_SAPLING;
             case STRUCTURES -> Items.MAP;
@@ -200,7 +226,16 @@ public final class EntryGrid extends AbstractWidget {
             case ENCHANTMENTS -> Items.ENCHANTED_BOOK;
             case ADVANCEMENTS -> Items.NETHER_STAR;
         };
-        return new ItemStack(item);
+    }
+
+    private static Component tooltipFor(final CollectibleEntry entry) {
+        final String namespace = entry.id().getNamespace();
+        final String modName = namespace.equals("minecraft")
+                ? "Minecraft"
+                : ModList.get().getModContainerById(namespace)
+                        .map(container -> container.getModInfo().getDisplayName())
+                        .orElse(namespace);
+        return Component.translatable("tooltip.itemcollector.entry", displayNameFor(entry), modName);
     }
 
     public static Component displayNameFor(final CollectibleEntry entry) {

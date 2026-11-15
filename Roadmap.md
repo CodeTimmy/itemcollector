@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6e implemented; GitHub Actions validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a–6f implemented; GitHub Actions validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -79,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6e implemented**; confirm the GitHub Actions build before starting **6f ⏳**.
+**Current position:** Phase **6f implemented**; confirm the GitHub Actions build before starting Phase 7.
 
 ---
 
@@ -310,12 +310,15 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 > Editor diagnostics report no errors, and the English localization JSON parses. Build validation is performed by GitHub Actions.
 
-### 6f. Display polish & animations — ⏳ todo
+### 6f. Display polish & animations — 🚧 implementation complete; CI validation pending
 
-- [ ] Tab underline eases over 200 ms after `lastTabSwitchMillis`
-- [ ] Entry fade-in over 300 ms after category/scroll change
+- [x] Tab underline eases over 200 ms after `lastTabSwitchMillis`
+- [x] Entry fade-in over 300 ms after category/scroll change
 - [x] Resolve raw item/block ID fallbacks to localized game names in the active language, including vanilla IDs such as `minecraft:brick`
-- [ ] Include the item's mod name in the tooltip for modded and Vanilla entries
+- [x] Include the item's mod name in the tooltip for modded and Vanilla entries
+- [x] Render `assets/itemcollector/textures/gui/unknown.png` instead of a barrier when an item or block icon is unavailable
+
+> Editor diagnostics report no errors, and the placeholder texture exists. Build validation is performed by GitHub Actions.
 
 ### Data source contract (critical for AI contributors)
 
