@@ -7,15 +7,17 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.AbstractFish;
+import net.minecraft.world.entity.animal.Bucketable;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -101,7 +103,15 @@ public final class ProgressEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!event.getItemStack().is(Items.BUCKET)) return;
 
-        final HitResult hitResult = player.pick(5.0D, 0.0F, false);
+        final Vec3 start = player.getEyePosition();
+        final Vec3 end = start.add(player.getViewVector(1.0F).scale(5.0D));
+        final HitResult hitResult = player.level().clip(new ClipContext(
+            start,
+            end,
+            ClipContext.Block.OUTLINE,
+            ClipContext.Fluid.SOURCE_ONLY,
+            player
+        ));
         if (hitResult instanceof BlockHitResult blockHit && hitResult.getType() == HitResult.Type.BLOCK) {
             markFluidBucketInteraction(player, event.getItemStack(), blockHit.getBlockPos());
         }
@@ -110,15 +120,15 @@ public final class ProgressEvents {
     private static void markFishBucketInteraction(final Player player, final net.minecraft.world.entity.Entity target,
                                                   final ItemStack heldItem) {
         if (!(player instanceof ServerPlayer serverPlayer) || serverPlayer.isSpectator()) return;
-        if (!(target instanceof AbstractFish fish) || !fish.isAlive()) return;
+        if (!(target instanceof Bucketable bucketable) || !(target instanceof LivingEntity entity) || !entity.isAlive()) return;
         if (!heldItem.is(Items.BUCKET)) return;
 
-        final ResourceLocation fishId = BuiltInRegistries.ENTITY_TYPE.getKey(fish.getType());
-        if (fishId != null) {
-            mark(serverPlayer, CollectionCategory.ENTITIES, fishId);
+        final ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        if (entityId != null) {
+            mark(serverPlayer, CollectionCategory.ENTITIES, entityId);
         }
         markItemStack(serverPlayer, heldItem);
-        markItemStack(serverPlayer, fish.getBucketItemStack());
+        markItemStack(serverPlayer, bucketable.getBucketItemStack());
     }
 
     private static void markFluidBucketInteraction(final Player player, final ItemStack heldItem,

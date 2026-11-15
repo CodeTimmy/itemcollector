@@ -145,8 +145,8 @@ graph TD
 
 | Category | Event | Notes |
 |---|---|---|
-| `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta, `PlayerInteractEvent` bucket hooks | Cover `EntityInteract` and `EntityInteractSpecific` for fish; cover `RightClickBlock` and `RightClickItem` for source-fluid pickup |
-| `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `RightClickBlock`, `RightClickItem` | Mark mining on server-side `Action.START`; empty-bucket pickup marks source water/lava blocks via either block-target or item-use ray trace |
+| `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta, `PlayerInteractEvent` bucket hooks | `EntityInteract` and `EntityInteractSpecific` mark any `Bucketable` entity result (including axolotls); fluid buckets use `RightClickBlock` or source-only ray tracing from `RightClickItem` |
+| `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `RightClickBlock`, `RightClickItem` | Mark mining on server-side `Action.START`; empty-bucket pickup marks source water/lava blocks via block target or source-fluid clip |
 | `ENTITIES` | `LivingDeathEvent` | ⚠️ See limitation below |
 | `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
 | `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
