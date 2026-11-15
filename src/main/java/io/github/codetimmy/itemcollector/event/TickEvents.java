@@ -17,7 +17,6 @@ import java.util.WeakHashMap;
 @EventBusSubscriber(modid = ItemCollectorMod.MODID)
 public final class TickEvents {
 
-    /** Tick-Zähler pro Spieler, um Polling zu drosseln (alle 20 Ticks = 1 Sekunde). */
     private static final Map<UUID, Integer> TICK_COUNTER = new WeakHashMap<>();
     private static final int POLL_INTERVAL = 20;
 
@@ -44,20 +43,18 @@ public final class TickEvents {
             }
         });
 
-        // --- STRUCTURES ---
-        // getStructureWithPieceAt liefert die Struktur, in der sich der Spieler befindet.
+        // --- STRUCTURES (1.21.1 API) ---
         var structureManager = level.structureManager();
-        var structureStart = structureManager.getStructureWithPieceAt(pos,
-                holder -> true); // alle Strukturen akzeptieren
+        var structureStart = structureManager.getStructureWithPieceAt(pos, holder -> true);
         if (structureStart != null && structureStart.isValid()) {
-            structureStart.getStructure().unwrapKey().ifPresent(key -> {
-                ResourceLocation id = key.location();
-                if (data.markCollected(player.getUUID(), CollectionCategory.STRUCTURES, id)) {
-                    ItemCollectorMod.LOGGER.debug(
-                            "[ItemCollector] {} discovered structure {}",
-                            player.getName().getString(), id);
-                }
-            });
+            // In 1.21.1 gibt es kein unwrapKey() an Structure.
+            // Stattdessen den Registry-Key direkt aus der Registry holen.
+            ResourceLocation id = BuiltInRegistries.STRUCTURE.getKey(structureStart.getStructure());
+            if (id != null && data.markCollected(player.getUUID(), CollectionCategory.STRUCTURES, id)) {
+                ItemCollectorMod.LOGGER.debug(
+                        "[ItemCollector] {} discovered structure {}",
+                        player.getName().getString(), id);
+            }
         }
     }
 }
