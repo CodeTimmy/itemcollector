@@ -22,7 +22,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
@@ -199,21 +201,31 @@ public final class ProgressEvents {
     }
 
     // ------------------------------------------------------------------
-    // ENTITIES — fired when a living entity dies
+    // Non-boss entities count when a player successfully damages them.
     // ------------------------------------------------------------------
     @SubscribeEvent
-    public static void onEntityDeath(LivingDeathEvent event) {
-        if (event.getEntity().level().isClientSide()) return;
+    public static void onLivingEntityDamaged(LivingIncomingDamageEvent event) {
+        if (event.getAmount() <= 0.0F) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
 
-        LivingEntity entity = event.getEntity();
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        final LivingEntity entity = event.getEntity();
+        if (entity.getType().is(Tags.EntityTypes.BOSSES)) return;
+
+        final ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (id != null) {
-            // Der Spieler, der getötet hat, ist nicht direkt verfügbar.
-            // Wir markieren für alle Spieler in der Nähe (vereinfacht).
-            // Für eine präzisere Zuordnung müsste man DamageSource auswerten.
-            entity.level().getEntitiesOfClass(ServerPlayer.class,
-                            entity.getBoundingBox().inflate(32.0))
-                    .forEach(player -> mark(player, CollectionCategory.ENTITIES, id));
+            mark(player, CollectionCategory.ENTITIES, id);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBossDeath(LivingDeathEvent event) {
+        final LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide() || !entity.getType().is(Tags.EntityTypes.BOSSES)) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+
+        final ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        if (id != null) {
+            mark(player, CollectionCategory.ENTITIES, id);
         }
     }
 

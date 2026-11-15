@@ -147,7 +147,7 @@ graph TD
 |---|---|---|
 | `ITEMS` | `ItemEntityPickupEvent.Post`, `PlayerEvent.ItemCraftedEvent`, `TradeWithVillagerEvent`, chest inventory delta, `PlayerInteractEvent` bucket hooks | `EntityInteract` and `EntityInteractSpecific` mark any `Bucketable` entity result (including axolotls); fluid buckets use `RightClickBlock` or source-only ray tracing from `RightClickItem` |
 | `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `RightClickBlock`, `RightClickItem` | Mark mining on server-side `Action.START`; empty-bucket pickup marks source water/lava blocks via block target or source-fluid clip |
-| `ENTITIES` | `LivingDeathEvent` | ⚠️ See limitation below |
+| `ENTITIES` | `LivingIncomingDamageEvent` for non-bosses; `LivingDeathEvent` for boss-tagged entities | Direct player-caused damage records ordinary living entities; bosses are recorded only on player-attributed death |
 | `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
 | `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
 | `ADVANCEMENTS` | `AdvancementEvent.AdvancementEarnEvent` | Filter `display().isEmpty()` |
@@ -164,9 +164,7 @@ graph TD
 
 ### ⚠️ Known limitations
 
-1. **Entity attribution** — `LivingDeathEvent` doesn't know which player landed the kill. Current code marks for all `ServerPlayer`s within 32 blocks. Refinement options:
-   - Read `event.getSource().getEntity()` and, if a `ServerPlayer`, mark only for that player.
-   - Fall back to proximity for environmental kills.
+1. **Modded boss classification** — modded bosses must be added to `Tags.EntityTypes.BOSSES` to receive death-only tracking; other living entities are collected on player-caused damage.
 2. **Tick batching** — `TickEvents` sends a separate `SyncProgressPayload` for every new biome/structure. Should be batched once per second in Phase 8.
 
 ---
@@ -337,15 +335,15 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 2 | `ENCHANTMENTS` | already ✅ | already ✅ |
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | already ✅ |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
-| 5 | `ENTITIES` | `BuiltInRegistries.ENTITY_TYPE` + variant enumeration | ⚠️ refine attribution |
+| 5 | `ENTITIES` | `BuiltInRegistries.ENTITY_TYPE` excluding players | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
 | 6 | `BIOMES` | `BuiltInRegistries.BIOME` | already ✅ |
 | 7 | `STRUCTURES` | `Registries.STRUCTURE` via `RegistryAccess` | already ✅ |
 
 **Steps per new category:**
 
 1. Add registry iteration block in `CollectibleRegistry.rebuild`.
-2. For entities, enumerate variants by inspecting `Entity` subclasses (sheep, villager, axolotl, etc.) and creating one `CollectibleEntry` per variant with `extraData` populated.
-3. Wire detection if not already done (most are done; entity variants need `LivingDeathEvent` extension).
+2. Entity variants (sheep colors, villager professions, etc.) remain future work; create one `CollectibleEntry` per variant with `extraData` populated when implemented.
+3. Entity discovery is tied to actual player interaction: ordinary living entities on positive player-caused damage, and boss-tagged entities only on player-caused death.
 4. No GUI change needed — `CollectionCategory.values()` drives tabs automatically.
 
 ---

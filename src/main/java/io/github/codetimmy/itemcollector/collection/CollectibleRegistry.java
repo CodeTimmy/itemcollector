@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -36,8 +37,9 @@ public final class CollectibleRegistry {
         buildCreativeOrderedCategory(CollectionCategory.ITEMS, BuiltInRegistries.ITEM, Items.AIR);
         buildCreativeOrderedCategory(CollectionCategory.BLOCKS, BuiltInRegistries.BLOCK, Blocks.AIR);
 
+        buildEntities();
+
         // Placeholders for later phases (see Phase 7 of the roadmap)
-        MASTER_LIST.put(CollectionCategory.ENTITIES, List.of());
         MASTER_LIST.put(CollectionCategory.BIOMES, List.of());
         MASTER_LIST.put(CollectionCategory.STRUCTURES, List.of());
         MASTER_LIST.put(CollectionCategory.EFFECTS, List.of());
@@ -47,6 +49,21 @@ public final class CollectibleRegistry {
 
         // Freeze each list to prevent accidental mutation by callers.
         MASTER_LIST.replaceAll((cat, list) -> Collections.unmodifiableList(list));
+    }
+
+    private static void buildEntities() {
+        final List<CollectibleEntry> entries = new ArrayList<>();
+        for (Map.Entry<ResourceKey<EntityType<?>>, EntityType<?>> entry : BuiltInRegistries.ENTITY_TYPE.entrySet()) {
+            final ResourceLocation id = entry.getKey().location();
+            if (entry.getValue() == EntityType.PLAYER) continue;
+
+            entries.add(new CollectibleEntry(
+                    id,
+                    Component.translatable(entry.getValue().getDescriptionId()),
+                    CollectionCategory.ENTITIES
+            ));
+        }
+        MASTER_LIST.put(CollectionCategory.ENTITIES, entries);
     }
 
     // ------------------------------------------------------------------
