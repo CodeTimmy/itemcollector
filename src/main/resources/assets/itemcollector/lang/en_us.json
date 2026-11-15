@@ -1,5 +1,13 @@
 {
   "key.itemcollector.open_collection": "Open Collection",
   "key.categories.itemcollector": "Item Collector",
-  "screen.itemcollector.collection": "Collection"
+  "screen.itemcollector.collection": "Collection",
+  "collection.category.items": "Items",
+  "collection.category.blocks": "Blocks",
+  "collection.category.entities": "Entities",
+  "collection.category.biomes": "Biomes",
+  "collection.category.structures": "Structures",
+  "collection.category.effects": "Effects",
+  "collection.category.enchantments": "Enchantments",
+  "collection.category.advancements": "Advancements"
 }

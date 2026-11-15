@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–5 ✅ complete. Phase 6 🚧 in progress (6a and 6b implemented; Gradle validation pending). Phase 7–8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -41,17 +41,18 @@ src/main/java/io/github/codetimmy/itemcollector/
 │   ├── SyncMasterListPayload.java           ✅
 │   └── SyncProgressPayload.java             ✅
 └── client/
-  ├── ClientEvents.java                     ✅ (keybind handler)
-  ├── ClientModEvents.java                 ✅ (keybind + menu screen registration)
-  ├── ClientPayloadHandler.java            ✅ (payload cache)
-  ├── CollectionMenu.java                  ✅ (no-slot menu)
-  └── CollectionScreen.java                ✅ (screen skeleton)
+    ├── ClientEvents.java                    ✅ (keybind handler)
+    ├── ClientModEvents.java                 ✅ (keybind + menu screen registration)
+    ├── ClientPayloadHandler.java            ✅ (payload cache)
+    ├── CollectionMenu.java                  ✅ (no-slot menu)
+    ├── CollectionScreen.java                🚧 (tabs; entry grid pending)
+    └── widget/
+        └── TabButton.java                   ✅
 ```
 
 Directories still to be created:
 
 ```
-├── client/widget/                           ⏳ Phase 6
 ├── command/                                 ⏳ Phase 8
 └── config/                                  ⏳ Phase 8
 ```
@@ -77,7 +78,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6a implemented**; confirm the Gradle compile before starting **6b ⏳**.
+**Current position:** Phase **6b implemented**; confirm the Gradle compile before starting **6c ⏳**.
 
 ---
 
@@ -272,13 +273,15 @@ These are the **only** data sources the GUI must read. No client-side registry i
 - [x] Keybind handler on `ClientTickEvent` opens the screen via `Minecraft.getInstance().setScreen(...)`
 - [x] Minimal `CollectionScreen` and English labels for the screen and Controls menu
 
-> Editor diagnostics report no errors. `gradlew compileJava` was skipped, so validate the build before continuing to 6b.
+> Editor diagnostics report no errors, and the user confirmed the keybind opens the screen. `gradlew compileJava` has not been rerun since the CI compile fixes.
 
-### 6b. Tabs — ⏳ todo
+### 6b. Tabs — 🚧 implementation complete; Gradle validation pending
 
-- [ ] `client/widget/TabButton` extends `AbstractWidget`
-- [ ] Renders icon + localized label per `CollectionCategory`
-- [ ] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
+- [x] `client/widget/TabButton` extends `AbstractWidget`
+- [x] Renders icon + localized label per `CollectionCategory`
+- [x] Tab switch resets scroll offset and updates `lastTabSwitchMillis`
+
+> Editor diagnostics report no errors and the English localization JSON parses. `gradlew compileJava` was skipped, so confirm the build before continuing to 6c.
 
 ### 6c. Entry grid — ⏳ todo
 
