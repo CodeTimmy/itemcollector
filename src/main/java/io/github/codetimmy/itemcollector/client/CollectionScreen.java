@@ -6,6 +6,7 @@ import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
 import io.github.codetimmy.itemcollector.collection.CollectibleEntry;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -136,6 +137,16 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
+        if (searchBox != null && searchBox.isFocused()
+                && Minecraft.getInstance().options.keyInventory.matches(keyCode, scanCode)) {
+            searchBox.keyPressed(keyCode, scanCode, modifiers);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

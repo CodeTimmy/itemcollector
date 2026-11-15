@@ -109,6 +109,7 @@ public final class EntryGrid extends AbstractWidget {
         final int scrollbarX = scrollbarX();
         if (button == 0 && mouseX >= scrollbarX - 2 && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2
                 && mouseY >= getY() && mouseY <= getY() + height && maxScrollOffset() > 0) {
+            setFocused(true);
             final int thumbHeight = scrollbarThumbHeight();
             final int thumbY = scrollbarThumbY();
             draggingScrollbar = true;
