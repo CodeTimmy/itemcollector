@@ -1,12 +1,13 @@
 package io.github.codetimmy.itemcollector.client.widget;
 
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -90,8 +91,7 @@ public final class TabButton extends AbstractWidget {
     }
 
     private static void renderEffectIcon(final GuiGraphics guiGraphics, final int x, final int y) {
-        guiGraphics.blitSprite(
-                ResourceLocation.fromNamespaceAndPath("minecraft", "mob_effect/speed"),
-                x, y, 16, 16);
+        final var sprite = Minecraft.getInstance().getMobEffectTextures().get(MobEffects.MOVEMENT_SPEED.value());
+        guiGraphics.blit(x, y, 0, 16, 16, sprite);
     }
 }

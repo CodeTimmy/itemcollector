@@ -3,6 +3,7 @@ package io.github.codetimmy.itemcollector.client.widget;
 import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
 import io.github.codetimmy.itemcollector.collection.CollectibleEntry;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -10,6 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -222,9 +224,13 @@ public final class EntryGrid extends AbstractWidget {
     }
 
     private static void renderEffectIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry, final int x, final int y) {
-        final ResourceLocation sprite = ResourceLocation.fromNamespaceAndPath(
-                entry.id().getNamespace(), "mob_effect/" + entry.id().getPath());
-        guiGraphics.blitSprite(sprite, x, y, 16, 16);
+        final MobEffect effect = BuiltInRegistries.MOB_EFFECT.getOptional(entry.id()).orElse(null);
+        if (effect == null) {
+            guiGraphics.blit(UNKNOWN_TEXTURE, x, y, 0, 0, 16, 16, 16, 16);
+            return;
+        }
+        final var sprite = Minecraft.getInstance().getMobEffectTextures().get(effect);
+        guiGraphics.blit(x, y, 0, 16, 16, sprite);
     }
 
     private static List<Component> tooltipLines(final CollectibleEntry entry) {
