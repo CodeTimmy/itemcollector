@@ -5,7 +5,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -52,7 +56,13 @@ public final class TabButton extends AbstractWidget {
             guiGraphics.fill(getX(), getY() + height - 2, getX() + width, getY() + height, 0xFFA8C49E);
         }
 
-        guiGraphics.renderItem(icon, getX() + (width - 16) / 2, getY() + (height - 16) / 2);
+        final int x = getX() + (width - 16) / 2;
+        final int y = getY() + (height - 16) / 2;
+        if (category == CollectionCategory.EFFECTS) {
+            renderEffectIcon(guiGraphics, x, y);
+            return;
+        }
+        guiGraphics.renderItem(icon, x, y);
     }
 
     @Override
@@ -80,5 +90,15 @@ public final class TabButton extends AbstractWidget {
             case ENCHANTMENTS -> Items.ENCHANTED_BOOK;
             case ADVANCEMENTS -> Items.NETHER_STAR;
         };
+    }
+
+    private static void renderEffectIcon(final GuiGraphics guiGraphics, final int x, final int y) {
+        final MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(MobEffects.MOVEMENT_SPEED);
+        final ResourceLocation sprite = effect != null ? effect.getIcon() : null;
+        if (sprite == null) {
+            guiGraphics.blit(ResourceLocation.fromNamespaceAndPath("itemcollector", "textures/gui/unknown.png"), x, y, 0, 0, 16, 16, 16, 16);
+            return;
+        }
+        guiGraphics.blitSprite(sprite, x, y, 16, 16);
     }
 }

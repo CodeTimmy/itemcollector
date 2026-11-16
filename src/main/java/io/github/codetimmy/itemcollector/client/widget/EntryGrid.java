@@ -10,6 +10,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -88,11 +89,15 @@ public final class EntryGrid extends AbstractWidget {
                 final CollectibleEntry entry = entries.get(entryIndex);
                 guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE,
                         hovered ? 0xFF46534A : 0xFF292D2B);
-                final Item icon = iconFor(entry);
-                if (icon == null) {
-                    guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
+                if (entry.category() == CollectionCategory.EFFECTS) {
+                    renderEffectIcon(guiGraphics, entry, x + 2, y + 2);
                 } else {
-                    guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
+                    final Item icon = iconFor(entry);
+                    if (icon == null) {
+                        guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
+                    } else {
+                        guiGraphics.renderItem(new ItemStack(icon), x + 2, y + 2);
+                    }
                 }
                 if (!ClientPayloadHandler.collected.contains(entry.id())) {
                     guiGraphics.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x80808080);
@@ -211,10 +216,21 @@ public final class EntryGrid extends AbstractWidget {
             case ENTITIES -> BuiltInRegistries.ITEM.getOptional(spawnEggId(entry.id())).orElse(null);
             case BIOMES -> null;
             case STRUCTURES -> null;
-            case EFFECTS -> Items.POTION;
+            case EFFECTS -> null;
             case ENCHANTMENTS -> Items.ENCHANTED_BOOK;
             case ADVANCEMENTS -> Items.NETHER_STAR;
         };
+    }
+
+    private static void renderEffectIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry, final int x, final int y) {
+        final ResourceLocation sprite = BuiltInRegistries.MOB_EFFECT.getOptional(entry.id())
+                .map(MobEffect::getIcon)
+                .orElse(null);
+        if (sprite == null) {
+            guiGraphics.blit(UNKNOWN_TEXTURE, x, y, 0, 0, 16, 16, 16, 16);
+            return;
+        }
+        guiGraphics.blitSprite(sprite, x, y, 16, 16);
     }
 
     private static List<Component> tooltipLines(final CollectibleEntry entry) {
