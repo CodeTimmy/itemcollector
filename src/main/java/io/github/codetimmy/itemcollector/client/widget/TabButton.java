@@ -5,11 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -93,12 +90,8 @@ public final class TabButton extends AbstractWidget {
     }
 
     private static void renderEffectIcon(final GuiGraphics guiGraphics, final int x, final int y) {
-        final MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(MobEffects.MOVEMENT_SPEED);
-        final ResourceLocation sprite = effect != null ? effect.getIcon() : null;
-        if (sprite == null) {
-            guiGraphics.blit(ResourceLocation.fromNamespaceAndPath("itemcollector", "textures/gui/unknown.png"), x, y, 0, 0, 16, 16, 16, 16);
-            return;
-        }
-        guiGraphics.blitSprite(sprite, x, y, 16, 16);
+        guiGraphics.blitSprite(
+                ResourceLocation.fromNamespaceAndPath("minecraft", "mob_effect/speed"),
+                x, y, 16, 16);
     }
 }
