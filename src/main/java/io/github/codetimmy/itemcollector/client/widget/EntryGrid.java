@@ -8,10 +8,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -224,7 +225,8 @@ public final class EntryGrid extends AbstractWidget {
     }
 
     private static void renderEffectIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry, final int x, final int y) {
-        final MobEffect effect = BuiltInRegistries.MOB_EFFECT.getOptional(entry.id()).orElse(null);
+        final var effect = BuiltInRegistries.MOB_EFFECT.getHolder(
+                ResourceKey.create(Registries.MOB_EFFECT, entry.id())).orElse(null);
         if (effect == null) {
             guiGraphics.blit(UNKNOWN_TEXTURE, x, y, 0, 0, 16, 16, 16, 16);
             return;

@@ -91,7 +91,7 @@ public final class TabButton extends AbstractWidget {
     }
 
     private static void renderEffectIcon(final GuiGraphics guiGraphics, final int x, final int y) {
-        final var sprite = Minecraft.getInstance().getMobEffectTextures().get(MobEffects.MOVEMENT_SPEED.value());
+        final var sprite = Minecraft.getInstance().getMobEffectTextures().get(MobEffects.MOVEMENT_SPEED);
         guiGraphics.blit(x, y, 0, 16, 16, sprite);
     }
 }
