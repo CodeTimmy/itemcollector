@@ -13,6 +13,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -46,9 +47,7 @@ public final class CollectibleRegistry {
         buildBiomes(server);
         buildStructures(server);
         buildEffects();
-
-        // Placeholders for later phases (see Phase 7 of the roadmap)
-        MASTER_LIST.put(CollectionCategory.ENCHANTMENTS, List.of());
+        buildEnchantments();
 
         buildAdvancements(server);
 
@@ -111,6 +110,19 @@ public final class CollectibleRegistry {
             ));
         }
         MASTER_LIST.put(CollectionCategory.EFFECTS, entries);
+    }
+
+    private static void buildEnchantments() {
+        final List<CollectibleEntry> entries = new ArrayList<>();
+        for (Map.Entry<ResourceKey<Enchantment>, Enchantment> entry : BuiltInRegistries.ENCHANTMENT.entrySet()) {
+            final ResourceLocation id = entry.getKey().location();
+            entries.add(new CollectibleEntry(
+                    id,
+                    Component.translatable("enchantment." + id.getNamespace() + "." + id.getPath()),
+                    CollectionCategory.ENCHANTMENTS
+            ));
+        }
+        MASTER_LIST.put(CollectionCategory.ENCHANTMENTS, entries);
     }
 
     // ------------------------------------------------------------------

@@ -3,6 +3,7 @@ package io.github.codetimmy.itemcollector.event;
 import io.github.codetimmy.itemcollector.ItemCollectorMod;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
 import io.github.codetimmy.itemcollector.collection.CollectionProgressData;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,7 @@ import net.minecraft.world.entity.animal.Bucketable;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -35,13 +37,16 @@ import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @EventBusSubscriber(modid = ItemCollectorMod.MODID)
 public final class ProgressEvents {
 
     private static final Map<UUID, Map<ResourceLocation, Integer>> OPEN_CHEST_ITEMS = new HashMap<>();
+    private static final Map<UUID, Map<ResourceLocation, Integer>> OPEN_CHEST_ENCHANTMENTS = new HashMap<>();
 
     // ------------------------------------------------------------------
     // ITEMS — fired after the item is added to the player's inventory
@@ -59,14 +64,7 @@ public final class ProgressEvents {
             mark(player, CollectionCategory.ITEMS, id);
         }
 
-        // ENCHANTMENTS — check the enchantments on the picked-up stack
-        ItemEnchantments enchantments = stack.getEnchantments();
-        for (var holder : enchantments.keySet()) {
-            holder.unwrapKey().ifPresent(key -> {
-                ResourceLocation enchId = key.location();
-                mark(player, CollectionCategory.ENCHANTMENTS, enchId);
-            });
-        }
+        markEnchantments(player, stack);
     }
 
     @SubscribeEvent
@@ -157,6 +155,7 @@ public final class ProgressEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getContainer() instanceof ChestMenu menu)) return;
         OPEN_CHEST_ITEMS.put(player.getUUID(), countChestItems(menu));
+        OPEN_CHEST_ENCHANTMENTS.put(player.getUUID(), countChestEnchantments(menu));
     }
 
     @SubscribeEvent
@@ -166,6 +165,7 @@ public final class ProgressEvents {
 
         recordChestLoot(player, menu);
         OPEN_CHEST_ITEMS.remove(player.getUUID());
+        OPEN_CHEST_ENCHANTMENTS.remove(player.getUUID());
     }
 
     @SubscribeEvent
@@ -173,6 +173,13 @@ public final class ProgressEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(player.containerMenu instanceof ChestMenu menu)) return;
         recordChestLoot(player, menu);
+    }
+
+    @SubscribeEvent
+    public static void onEnchantingTableTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(player.containerMenu instanceof EnchantmentMenu menu)) return;
+        markEnchantments(player, menu.getSlot(0).getItem());
     }
 
     private static void recordChestLoot(final ServerPlayer player, final ChestMenu menu) {
@@ -186,6 +193,17 @@ public final class ProgressEvents {
             }
         });
         OPEN_CHEST_ITEMS.put(player.getUUID(), after);
+
+        final Map<ResourceLocation, Integer> enchantmentsBefore = OPEN_CHEST_ENCHANTMENTS.get(player.getUUID());
+        if (enchantmentsBefore != null) {
+            final Map<ResourceLocation, Integer> enchantmentsAfter = countChestEnchantments(menu);
+            enchantmentsBefore.forEach((id, count) -> {
+                if (enchantmentsAfter.getOrDefault(id, 0) < count) {
+                    mark(player, CollectionCategory.ENCHANTMENTS, id);
+                }
+            });
+            OPEN_CHEST_ENCHANTMENTS.put(player.getUUID(), enchantmentsAfter);
+        }
     }
 
     @SubscribeEvent
@@ -279,6 +297,27 @@ public final class ProgressEvents {
         if (id != null) {
             mark(player, CollectionCategory.ITEMS, id);
         }
+        markEnchantments(player, stack);
+    }
+
+    private static void markEnchantments(final ServerPlayer player, final ItemStack stack) {
+        if (stack.isEmpty()) return;
+        for (ResourceLocation id : enchantmentIds(stack)) {
+            mark(player, CollectionCategory.ENCHANTMENTS, id);
+        }
+    }
+
+    private static Set<ResourceLocation> enchantmentIds(final ItemStack stack) {
+        final Set<ResourceLocation> ids = new HashSet<>();
+        addEnchantmentIds(ids, stack.getEnchantments());
+        addEnchantmentIds(ids, stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY));
+        return ids;
+    }
+
+    private static void addEnchantmentIds(final Set<ResourceLocation> ids, final ItemEnchantments enchantments) {
+        for (var holder : enchantments.keySet()) {
+            holder.unwrapKey().ifPresent(key -> ids.add(key.location()));
+        }
     }
 
     private static void markBlock(final ServerPlayer player, final net.minecraft.world.level.block.Block block) {
@@ -297,6 +336,20 @@ public final class ProgressEvents {
 
             final ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (id != null) {
+                counts.merge(id, stack.getCount(), Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    private static Map<ResourceLocation, Integer> countChestEnchantments(final AbstractContainerMenu menu) {
+        final Map<ResourceLocation, Integer> counts = new HashMap<>();
+        final int containerSlotCount = Math.max(0, menu.slots.size() - 36);
+        for (int slotIndex = 0; slotIndex < containerSlotCount; slotIndex++) {
+            final ItemStack stack = menu.slots.get(slotIndex).getItem();
+            if (stack.isEmpty()) continue;
+
+            for (ResourceLocation id : enchantmentIds(stack)) {
                 counts.merge(id, stack.getCount(), Integer::sum);
             }
         }
