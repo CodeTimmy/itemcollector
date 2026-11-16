@@ -1,15 +1,16 @@
 package io.github.codetimmy.itemcollector.client.widget;
 
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -33,7 +34,7 @@ public final class TabButton extends AbstractWidget {
         super(x, y, width, height, Component.translatable(categoryTranslationKey(category)));
         setTooltip(Tooltip.create(getMessage()));
         this.category = category;
-        this.icon = new ItemStack(iconFor(category));
+        this.icon = iconStackFor(category);
         this.selected = selected;
         this.onSelect = onSelect;
     }
@@ -56,10 +57,6 @@ public final class TabButton extends AbstractWidget {
 
         final int x = getX() + (width - 16) / 2;
         final int y = getY() + (height - 16) / 2;
-        if (category == CollectionCategory.EFFECTS) {
-            renderEffectIcon(guiGraphics, x, y);
-            return;
-        }
         guiGraphics.renderItem(icon, x, y);
     }
 
@@ -90,8 +87,11 @@ public final class TabButton extends AbstractWidget {
         };
     }
 
-    private static void renderEffectIcon(final GuiGraphics guiGraphics, final int x, final int y) {
-        final var sprite = Minecraft.getInstance().getMobEffectTextures().get(MobEffects.MOVEMENT_SPEED);
-        guiGraphics.blit(x, y, 0, 16, 16, sprite);
+    private static ItemStack iconStackFor(final CollectionCategory category) {
+        final ItemStack stack = new ItemStack(iconFor(category));
+        if (category == CollectionCategory.EFFECTS) {
+            stack.set(DataComponents.POTION_CONTENTS, PotionContents.EMPTY.withPotion(Potions.REGENERATION));
+        }
+        return stack;
     }
 }
