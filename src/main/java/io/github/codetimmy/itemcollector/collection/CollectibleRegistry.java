@@ -47,7 +47,7 @@ public final class CollectibleRegistry {
         buildBiomes(server);
         buildStructures(server);
         buildEffects();
-        buildEnchantments();
+        buildEnchantments(server);
 
         buildAdvancements(server);
 
@@ -112,9 +112,10 @@ public final class CollectibleRegistry {
         MASTER_LIST.put(CollectionCategory.EFFECTS, entries);
     }
 
-    private static void buildEnchantments() {
+    private static void buildEnchantments(final MinecraftServer server) {
         final List<CollectibleEntry> entries = new ArrayList<>();
-        for (Map.Entry<ResourceKey<Enchantment>, Enchantment> entry : BuiltInRegistries.ENCHANTMENT.entrySet()) {
+        final var enchantmentRegistry = server.overworld().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
+        for (Map.Entry<ResourceKey<Enchantment>, Enchantment> entry : enchantmentRegistry.entrySet()) {
             final ResourceLocation id = entry.getKey().location();
             entries.add(new CollectibleEntry(
                     id,

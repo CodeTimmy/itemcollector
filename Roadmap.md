@@ -122,7 +122,7 @@ graph TD
 | Fact | Detail |
 |---|---|
 | `BuiltInRegistries.STRUCTURE` **does not exist** | Structures are a datapack registry. Access via `level.registryAccess().registryOrThrow(Registries.STRUCTURE)`. |
-| `BuiltInRegistries.BIOME` **does not exist** | Biomes are accessed via `level.registryAccess().registryOrThrow(Registries.BIOME)`. `BuiltInRegistries.MOB_EFFECT` and `ENCHANTMENT` do exist. |
+| `BuiltInRegistries.BIOME` and `BuiltInRegistries.ENCHANTMENT` **do not exist** | Biomes and enchantments are datapack registries; access them via `server.overworld().registryAccess().registryOrThrow(Registries.BIOME/ENCHANTMENT)`. `BuiltInRegistries.MOB_EFFECT` exists. |
 | Advancement list is **not** in a registry | Query `ServerAdvancementManager` via `server.getAdvancements()`. |
 
 ### Known limitations
@@ -149,7 +149,7 @@ graph TD
 | `BLOCKS` | `PlayerInteractEvent.LeftClickBlock`, `RightClickBlock`, `RightClickItem` | Mark mining on server-side `Action.START`; empty-bucket pickup marks source water/lava blocks via block target or source-fluid clip |
 | `ENTITIES` | `LivingIncomingDamageEvent` for non-bosses; `LivingDeathEvent` for boss-tagged entities | Direct player-caused damage records ordinary living entities; bosses are recorded only on player-attributed death |
 | `EFFECTS` | `MobEffectEvent.Applicable` | `getEffectInstance().getEffect()` |
-| `ENCHANTMENTS` | `ItemEntityPickupEvent.Post` | Iterate `stack.getEnchantments()` |
+| `ENCHANTMENTS` | Item pickup, completed villager trade, chest inventory delta, enchanting table menu | Read both `ENCHANTMENTS` and `STORED_ENCHANTMENTS` components from the item/book stack. |
 | `ADVANCEMENTS` | `AdvancementEvent.AdvancementEarnEvent` | Filter `display().isEmpty()` |
 | `BIOMES` | `PlayerTickEvent.Post` (throttled) | Every 20 ticks |
 | `STRUCTURES` | `PlayerTickEvent.Post` (throttled) | Every 20 ticks |
@@ -332,7 +332,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | Order | Category | Registry / source | Detection |
 |---|---|---|---|
 | 1 | `BLOCKS` | already ✅ | already ✅ |
-| 2 | `ENCHANTMENTS` | already ✅ | already ✅ |
+| 2 | `ENCHANTMENTS` | `Registries.ENCHANTMENT` via server `RegistryAccess` | Populated with localized names; discovered from enchanted items/books on pickup, trade, chest looting, or enchanting-table use |
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | populated with localized effect names; detected on application and synced |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
 | 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
@@ -395,7 +395,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 > Ordered by likelihood of hitting again. All entries are verified against NeoForge 1.21.1 / 21.1.264.
 
 1. **`SavedDataType` does not exist** → use `SavedData.Factory` + manual `save`/`load`.
-2. **`BuiltInRegistries.STRUCTURE` does not exist** → use `RegistryAccess.registryOrThrow(Registries.STRUCTURE)`.
+2. **Datapack registries are not in `BuiltInRegistries`** → structures, biomes, and enchantments use `RegistryAccess.registryOrThrow(Registries.STRUCTURE/BIOME/ENCHANTMENT)`.
 3. **`Structure.unwrapKey()` does not exist** → get key from registry via `.getKey(structure)`.
 4. **`@EventBusSubscriber.Bus.GAME` is deprecated** → omit the `bus` parameter for game-bus events.
 5. **Mod-bus subscriber selection** → `bus = EventBusSubscriber.Bus.MOD` selects the mod bus for annotation-based subscribers, but NeoForge 21.1.264 warns that `bus()` and `Bus` are deprecated for removal; explicit event-bus registration is the migration path.
