@@ -31,7 +31,7 @@ public final class EntryGrid extends AbstractWidget {
         private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "itemcollector", "textures/gui/unknown.png");
     private static final ResourceLocation RECOVERED_PACK_MARKER = ResourceLocation.fromNamespaceAndPath(
-            "carl", "textures/item/protection.png");
+            "minecraft", "optifine/cit/vanilla/protection.png");
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
@@ -257,7 +257,8 @@ public final class EntryGrid extends AbstractWidget {
         if (!enchantmentId.getNamespace().equals("minecraft")) {
             return null;
         }
-        return ResourceLocation.fromNamespaceAndPath("carl", "textures/item/" + enchantmentId.getPath() + ".png");
+        return ResourceLocation.fromNamespaceAndPath(
+                "minecraft", "optifine/cit/vanilla/" + enchantmentId.getPath() + ".png");
     }
 
     private static List<Component> tooltipLines(final CollectibleEntry entry) {
