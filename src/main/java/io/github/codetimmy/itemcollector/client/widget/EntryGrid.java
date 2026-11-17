@@ -30,6 +30,8 @@ public final class EntryGrid extends AbstractWidget {
     private static final int SCROLLBAR_GAP = 4;
         private static final ResourceLocation UNKNOWN_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             "itemcollector", "textures/gui/unknown.png");
+    private static final ResourceLocation RECOVERED_PACK_MARKER = ResourceLocation.fromNamespaceAndPath(
+            "carl", "textures/item/protection.png");
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
@@ -93,6 +95,8 @@ public final class EntryGrid extends AbstractWidget {
                         hovered ? 0xFF46534A : 0xFF292D2B);
                 if (entry.category() == CollectionCategory.EFFECTS) {
                     renderEffectIcon(guiGraphics, entry, x + 2, y + 2);
+                } else if (entry.category() == CollectionCategory.ENCHANTMENTS) {
+                    renderEnchantmentIcon(guiGraphics, entry, x + 2, y + 2);
                 } else {
                     final Item icon = iconFor(entry);
                     if (icon == null) {
@@ -146,6 +150,10 @@ public final class EntryGrid extends AbstractWidget {
 
     public void endScrollbarDrag() {
         scrollbarDragActive = false;
+    }
+
+    public static boolean isReCoveredResourcePackLoaded() {
+        return Minecraft.getInstance().getResourceManager().getResource(RECOVERED_PACK_MARKER).isPresent();
     }
 
     private double maxScrollOffset() {
@@ -233,6 +241,23 @@ public final class EntryGrid extends AbstractWidget {
         }
         final var sprite = Minecraft.getInstance().getMobEffectTextures().get(effect);
         guiGraphics.blit(x, y, 0, 16, 16, sprite);
+    }
+
+    private static void renderEnchantmentIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry,
+                                               final int x, final int y) {
+        final ResourceLocation texture = enchantmentTexture(entry.id());
+        if (texture != null && Minecraft.getInstance().getResourceManager().getResource(texture).isPresent()) {
+            guiGraphics.blit(texture, x, y, 0, 0, 16, 16, 16, 16);
+            return;
+        }
+        guiGraphics.renderItem(new ItemStack(Items.ENCHANTED_BOOK), x, y);
+    }
+
+    private static ResourceLocation enchantmentTexture(final ResourceLocation enchantmentId) {
+        if (!enchantmentId.getNamespace().equals("minecraft")) {
+            return null;
+        }
+        return ResourceLocation.fromNamespaceAndPath("carl", "textures/item/" + enchantmentId.getPath() + ".png");
     }
 
     private static List<Component> tooltipLines(final CollectibleEntry entry) {
