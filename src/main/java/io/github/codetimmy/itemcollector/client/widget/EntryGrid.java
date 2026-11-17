@@ -1,5 +1,6 @@
 package io.github.codetimmy.itemcollector.client.widget;
 
+import io.github.codetimmy.itemcollector.ItemCollectorMod;
 import io.github.codetimmy.itemcollector.client.ClientPayloadHandler;
 import io.github.codetimmy.itemcollector.collection.CollectibleEntry;
 import io.github.codetimmy.itemcollector.collection.CollectionCategory;
@@ -13,12 +14,18 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public final class EntryGrid extends AbstractWidget {
@@ -32,6 +39,8 @@ public final class EntryGrid extends AbstractWidget {
             "itemcollector", "textures/gui/unknown.png");
     private static final ResourceLocation RECOVERED_PACK_MARKER = ResourceLocation.fromNamespaceAndPath(
             "minecraft", "optifine/cit/vanilla/protection.png");
+    private static final Map<ResourceLocation, Optional<PngDimensions>> PNG_DIMENSIONS = new HashMap<>();
+    private static ResourceManager cachedResourceManager;
 
     private List<CollectibleEntry> entries = List.of();
     private double scrollOffset;
@@ -246,11 +255,51 @@ public final class EntryGrid extends AbstractWidget {
     private static void renderEnchantmentIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry,
                                                final int x, final int y) {
         final ResourceLocation texture = enchantmentTexture(entry.id());
-        if (texture != null && Minecraft.getInstance().getResourceManager().getResource(texture).isPresent()) {
-            guiGraphics.blit(texture, x, y, 0, 0, 16, 16, 16, 16);
-            return;
+        if (texture != null) {
+            final Optional<PngDimensions> dimensions = pngDimensions(texture);
+            if (dimensions.isPresent()) {
+                final PngDimensions size = dimensions.get();
+                final int frameHeight = size.height() > size.width() ? size.width() : size.height();
+                guiGraphics.blit(texture, x, y, 0, 16, 16, size.width(), size.height(),
+                        0, 0, size.width(), frameHeight);
+                return;
+            }
         }
         guiGraphics.renderItem(new ItemStack(Items.ENCHANTED_BOOK), x, y);
+    }
+
+    private static Optional<PngDimensions> pngDimensions(final ResourceLocation texture) {
+        final ResourceManager resourceManager = Minecraft.getInstance().getResourceManager();
+        if (cachedResourceManager != resourceManager) {
+            PNG_DIMENSIONS.clear();
+            cachedResourceManager = resourceManager;
+        }
+        return PNG_DIMENSIONS.computeIfAbsent(texture, id -> readPngDimensions(resourceManager, id));
+    }
+
+    private static Optional<PngDimensions> readPngDimensions(final ResourceManager resourceManager,
+                                                               final ResourceLocation texture) {
+        final Optional<Resource> resource = resourceManager.getResource(texture);
+        if (resource.isEmpty()) {
+            return Optional.empty();
+        }
+        try (DataInputStream input = new DataInputStream(resource.get().open())) {
+            if (input.readLong() != 0x89504E470D0A1A0AL || input.readInt() != 13 || input.readInt() != 0x49484452) {
+                throw new IOException("Invalid PNG header");
+            }
+            final int width = input.readInt();
+            final int height = input.readInt();
+            if (width <= 0 || height <= 0) {
+                throw new IOException("Invalid PNG dimensions");
+            }
+            return Optional.of(new PngDimensions(width, height));
+        } catch (IOException exception) {
+            ItemCollectorMod.LOGGER.warn("Unable to read enchantment texture dimensions for {}", texture, exception);
+            return Optional.empty();
+        }
+    }
+
+    private record PngDimensions(int width, int height) {
     }
 
     private static ResourceLocation enchantmentTexture(final ResourceLocation enchantmentId) {
