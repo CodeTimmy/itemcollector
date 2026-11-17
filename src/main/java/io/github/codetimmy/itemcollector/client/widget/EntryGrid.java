@@ -271,9 +271,8 @@ public final class EntryGrid extends AbstractWidget {
         if (level == null) {
             return ItemStack.EMPTY;
         }
-        return ItemStack.parseOptional(level.registryAccess(), entry.extraData().getCompound("icon"))
-                .filter(stack -> !stack.isEmpty())
-                .orElse(ItemStack.EMPTY);
+        final ItemStack icon = ItemStack.parseOptional(level.registryAccess(), entry.extraData().getCompound("icon"));
+        return icon.isEmpty() ? ItemStack.EMPTY : icon;
     }
 
     private static void renderEnchantmentIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry,
