@@ -11,6 +11,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -43,6 +44,7 @@ public final class EntryGrid extends AbstractWidget {
     private static ResourceManager cachedResourceManager;
 
     private List<CollectibleEntry> entries = List.of();
+    private final Map<ResourceLocation, ItemStack> advancementIconCache = new HashMap<>();
     private double scrollOffset;
     private boolean scrollbarDragActive;
     private double scrollbarDragOffset;
@@ -53,6 +55,7 @@ public final class EntryGrid extends AbstractWidget {
 
     public void setEntries(final List<CollectibleEntry> entries) {
         this.entries = entries;
+        advancementIconCache.clear();
         scrollOffset = 0;
     }
 
@@ -106,6 +109,14 @@ public final class EntryGrid extends AbstractWidget {
                     renderEffectIcon(guiGraphics, entry, x + 2, y + 2);
                 } else if (entry.category() == CollectionCategory.ENCHANTMENTS) {
                     renderEnchantmentIcon(guiGraphics, entry, x + 2, y + 2);
+                } else if (entry.category() == CollectionCategory.ADVANCEMENTS) {
+                    final ItemStack icon = advancementIconCache.computeIfAbsent(
+                            entry.id(), ignored -> advancementIcon(entry));
+                    if (icon.isEmpty()) {
+                        guiGraphics.blit(UNKNOWN_TEXTURE, x + 2, y + 2, 0, 0, 16, 16, 16, 16);
+                    } else {
+                        guiGraphics.renderItem(icon, x + 2, y + 2);
+                    }
                 } else {
                     final Item icon = iconFor(entry);
                     if (icon == null) {
@@ -250,6 +261,19 @@ public final class EntryGrid extends AbstractWidget {
         }
         final var sprite = Minecraft.getInstance().getMobEffectTextures().get(effect);
         guiGraphics.blit(x, y, 0, 16, 16, sprite);
+    }
+
+    private static ItemStack advancementIcon(final CollectibleEntry entry) {
+        if (entry.extraData() == null || !entry.extraData().contains("icon", Tag.TAG_COMPOUND)) {
+            return ItemStack.EMPTY;
+        }
+        final var level = Minecraft.getInstance().level;
+        if (level == null) {
+            return ItemStack.EMPTY;
+        }
+        return ItemStack.parseOptional(level.registryAccess(), entry.extraData().getCompound("icon"))
+                .filter(stack -> !stack.isEmpty())
+                .orElse(ItemStack.EMPTY);
     }
 
     private static void renderEnchantmentIcon(final GuiGraphics guiGraphics, final CollectibleEntry entry,

@@ -184,10 +184,6 @@ public final class CollectionScreen extends AbstractContainerScreen<CollectionMe
 
     @Override
     protected void renderLabels(final GuiGraphics guiGraphics, final int mouseX, final int mouseY) {
-        if (activeCategory == CollectionCategory.ENCHANTMENTS && EntryGrid.isReCoveredResourcePackLoaded()) {
-            guiGraphics.drawString(font, "Textures: Re-covered by carl_classic",
-                    8, 68, 0xFFB8C2BA, false);
-        }
         guiGraphics.fill(8, 78, imageWidth - 8, 79, 0xFF59645C);
     }
 }

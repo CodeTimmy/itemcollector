@@ -2,6 +2,7 @@ package io.github.codetimmy.itemcollector.collection;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -200,11 +201,15 @@ public final class CollectibleRegistry {
             // Skip recipe advancements and other hidden entries.
             if (advancement.display().isEmpty()) continue;
 
-            Component title = advancement.display().get().getTitle();
+            var display = advancement.display().get();
+            Component title = display.getTitle();
+            CompoundTag extraData = new CompoundTag();
+            extraData.put("icon", display.getIcon().save(server.registryAccess()));
             entries.add(new CollectibleEntry(
                     holder.id(),
                     title,
-                    CollectionCategory.ADVANCEMENTS
+                    CollectionCategory.ADVANCEMENTS,
+                    extraData
             ));
         }
 

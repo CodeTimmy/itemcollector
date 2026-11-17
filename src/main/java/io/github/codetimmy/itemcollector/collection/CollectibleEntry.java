@@ -10,8 +10,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>{@code id} is the registry key (e.g. {@code minecraft:stone}).
  * {@code displayName} is what the player sees in the UI.
- * {@code extraData} is used for variant-specific information
- * (e.g. sheep color, villager profession) and may be null.</p>
+ * {@code extraData} is used for variant-specific information or display metadata
+ * (e.g. sheep color, villager profession, advancement icon) and may be null.</p>
  *
  * <p>This record is immutable. Do not add setters; create a new instance
  * if an entry needs to change (e.g. after a localization reload).</p>
@@ -36,6 +36,6 @@ public record CollectibleEntry(
 
     /** True if this entry describes a specific variant (e.g. a red sheep). */
     public boolean hasVariantData() {
-        return extraData != null && !extraData.isEmpty();
+        return category != CollectionCategory.ADVANCEMENTS && extraData != null && !extraData.isEmpty();
     }
 }
