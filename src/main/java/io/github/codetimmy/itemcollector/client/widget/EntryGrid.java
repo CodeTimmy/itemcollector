@@ -260,8 +260,16 @@ public final class EntryGrid extends AbstractWidget {
             if (dimensions.isPresent()) {
                 final PngDimensions size = dimensions.get();
                 final int frameHeight = size.height() > size.width() ? size.width() : size.height();
-                guiGraphics.blit(texture, x, y, 0, 16, 16, size.width(), size.height(),
-                        0, 0, size.width(), frameHeight);
+                final var pose = guiGraphics.pose();
+                pose.pushPose();
+                try {
+                    pose.translate(x, y, 0.0);
+                    pose.scale(16.0F / size.width(), 16.0F / frameHeight, 1.0F);
+                    guiGraphics.blit(texture, 0, 0, 0, 0, size.width(), frameHeight,
+                            size.width(), size.height());
+                } finally {
+                    pose.popPose();
+                }
                 return;
             }
         }
