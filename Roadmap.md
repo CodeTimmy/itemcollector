@@ -1,6 +1,6 @@
 # Collection Log Mod — Implementation Roadmap (v2)
 
-> **Status snapshot:** Phases 1–6 ✅ complete. Bug-fix interruption in progress before Phase 7. Phases 7–8 ⏳ pending.
+> **Status snapshot:** Phases 1–7 ✅ complete. Phase 8 ⏳ pending.
 >
 > This revision reflects the **actual APIs and quirks encountered during implementation** for NeoForge 1.21.1. Sections marked **[CORRECTED]** contain a deviation from the original plan that must be respected by any future contributor (human or AI). Status legend: ✅ done · 🚧 in progress · ⏳ pending · ⚠️ known issue.
 
@@ -45,7 +45,7 @@ src/main/java/io/github/codetimmy/itemcollector/
     ├── ClientModEvents.java                 ✅ (keybind + menu screen registration)
     ├── ClientPayloadHandler.java            ✅ (payload cache)
     ├── CollectionMenu.java                  ✅ (no-slot menu)
-    ├── CollectionScreen.java                🚧 (tabs + entry grid)
+    ├── CollectionScreen.java                ✅ (tabs + entry grid)
     └── widget/
       ├── EntryGrid.java                   ✅
       └── TabButton.java                   ✅
@@ -69,7 +69,7 @@ graph TD
     P3 --> P4[Phase 4 ✅ Persistence]
     P4 --> P5[Phase 5 ✅ Networking]
     P5 --> P6[Phase 6 ✅ GUI]
-    P6 --> P7[Phase 7 ⏳ Category Expansion]
+    P6 --> P7[Phase 7 ✅ Category Expansion]
     P7 --> P8[Phase 8 ⏳ Polish & Release]
 
     P6a[6a: Screen skeleton ✅] --> P6b[6b: Tabs]
@@ -79,7 +79,7 @@ graph TD
     P6e --> P6f[6f: Animations]
 ```
 
-**Current position:** Phase **6 complete**. Temporarily paused for bug fixes before starting Phase 7.
+**Current position:** Phase **7 complete**. Proceed to Phase 8.
 
 ---
 
@@ -325,7 +325,7 @@ These are the **only** data sources the GUI must read. No client-side registry i
 
 ---
 
-## 8. Phase 7 — Category Expansion ⏳
+## 8. Phase 7 — Category Expansion ✅
 
 Fill the placeholder lists and wire additional handlers. Each category is independent.
 
@@ -335,14 +335,16 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | 2 | `ENCHANTMENTS` | `Registries.ENCHANTMENT` via server `RegistryAccess` | Populated with localized names; discovered from enchanted items/books on pickup, trade, chest looting, or enchanting-table use |
 | 3 | `EFFECTS` | `BuiltInRegistries.MOB_EFFECT` | populated with localized effect names; detected on application and synced |
 | 4 | `ADVANCEMENTS` | already ✅ | already ✅ |
-| 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; variant enumeration remains future work |
+| 5 | `ENTITIES` | Living spawn categories from `BuiltInRegistries.ENTITY_TYPE` (exclude players/non-living `MISC`; retain armor stands) | Non-bosses: player-caused damage; bosses (`Tags.EntityTypes.BOSSES`): player-attributed death only; tracks base entity types |
 | 6 | `BIOMES` | `Registries.BIOME` via `server.overworld().registryAccess()` | populated; discovered on throttled player tick and synced |
 | 7 | `STRUCTURES` | `Registries.STRUCTURE` via server `RegistryAccess` | Populated in the master list; discovered when a player enters a structure piece, then synced |
+
+> **Not planned for Phase 7 — entity/item variants:** Collection tracks base entity types. Variant-specific entries (including variants represented by items, such as tropical fish buckets) are deferred to a possible future feature; revisit only with a general-use design and meaningful mod compatibility.
 
 **Steps per new category:**
 
 1. Add registry iteration block in `CollectibleRegistry.rebuild`.
-2. Entity variants (sheep colors, villager professions, etc.) remain future work; create one `CollectibleEntry` per variant with `extraData` populated when implemented.
+2. Entity variants are outside this phase's scope; see the scope note above.
 3. Entity discovery is tied to actual player interaction: ordinary living entities on positive player-caused damage, and boss-tagged entities only on player-caused death.
 4. No GUI change needed — `CollectionCategory.values()` drives tabs automatically.
 
@@ -350,43 +352,70 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 
 ## 9. Phase 8 — Polish & Release ⏳
 
-### Config
+Implement Phase 8 in the following coding order. Each subsection is a separately trackable increment; keep later steps compatible with earlier config and command APIs.
 
-- [ ] `config/CollectionConfig.java` via `ModConfigSpec`
-- [ ] Per-category enable/disable switches
-- [ ] Regex-based item exclusion
-- [ ] Explicit item-ID exclusion list
-- [ ] Configure which biomes each block is assigned to for biome collection/display
-- [ ] Configure which biomes each structure is assigned to for biome collection/display
-- [ ] Collected/uncollected appearance options: invert the default colors or configure custom colors for each state
-- [ ] Other fields: `togetherModeDefault`, `pollIntervalTicks` (default `20`)
+### 8.1. Config foundation
 
-### Commands
+- [ ] Create `config/CollectionConfig.java` using `ModConfigSpec` and register the config.
+- [ ] Add per-category enable/disable switches.
+- [ ] Add `togetherModeDefault` and `pollIntervalTicks` (default `20`).
 
-- [ ] `/collection open` — opens the GUI (client)
-- [ ] `/collection reset <player>` — clears progress (op 2)
-- [ ] `/collection stats` — prints per-category counts (op 2)
-- [ ] `/collection dump` — dumps master list (debug, op 4)
+### 8.2. Configurable collection filters
 
-### Optimizations
+- [ ] Add regex-based item exclusion.
+- [ ] Add an explicit item-ID exclusion list.
+- [ ] Configure which biomes each block is assigned to for biome collection/display.
+- [ ] Configure which biomes each structure is assigned to for biome collection/display.
 
-- [ ] Debounce `sendProgressUpdate` — batch all new marks from one tick into a single payload
-- [ ] Chunk `SyncMasterListPayload` if serialized size > 900 KB
-- [ ] Cache structure-tag lookups per chunk to avoid repeated `getStructureWithPieceAt` calls
+### 8.3. Configurable collection appearance
 
-### Features
+- [ ] Add collected/uncollected appearance options: invert the default colors or configure custom colors for each state.
 
-- [ ] "Together" mode (shared progress)
-- [ ] 3D entity previews via Fancy Entity Renderer or NeoForge PiP
-- [ ] Advancement award on 100% category completion
+### 8.4. Command registration and GUI opening
 
-### Release
+- [ ] Create/register the `/collection` command tree.
+- [ ] Implement `/collection open` to open the GUI for the executing player.
 
-- [ ] Localization (`lang/en_us.json`)
-- [ ] `CHANGELOG.md`
-- [ ] Bump `mod_version`
-- [ ] GitHub tag + release with JAR
-- [ ] Publish to Modrinth / CurseForge with screenshots
+### 8.5. Progress administration commands
+
+- [ ] Implement `/collection reset <player>` to clear progress (op 2).
+- [ ] Implement `/collection stats` to print per-category counts (op 2).
+- [ ] Implement `/collection dump` to dump the master list (debug, op 4).
+
+### 8.6. Progress sync batching
+
+- [ ] Debounce `sendProgressUpdate` by batching all new marks from one tick into a single payload.
+
+### 8.7. Large master-list synchronization
+
+- [ ] Chunk `SyncMasterListPayload` if its serialized size exceeds 900 KB.
+
+### 8.8. Structure lookup optimization
+
+- [ ] Cache structure-tag lookups per chunk to avoid repeated `getStructureWithPieceAt` calls.
+
+### 8.9. Shared progress
+
+- [ ] Implement "Together" mode (shared progress).
+
+### 8.10. Entity previews
+
+- [ ] Add 3D entity previews via Fancy Entity Renderer or NeoForge PiP.
+
+### 8.11. Completion rewards
+
+- [ ] Award an advancement on 100% category completion.
+
+### 8.12. Release preparation
+
+- [ ] Add localization (`lang/en_us.json`).
+- [ ] Create `CHANGELOG.md`.
+- [ ] Bump `mod_version`.
+
+### 8.13. Publish
+
+- [ ] Create a GitHub tag and release with the JAR.
+- [ ] Publish to Modrinth / CurseForge with screenshots.
 
 ---
 
@@ -432,7 +461,7 @@ Fill the placeholder lists and wire additional handlers. Each category is indepe
 | **M2 — Items end-to-end** | Pick up → log confirms → restart persists → network syncs | ✅ |
 | **M3 — UI MVP** | Screen opens, item tab renders, collected vs. uncollected distinct | ✅ |
 | **M4 — Networking complete** | Multiplayer: two players see separate progress; "Together" merges | 🚧 (multiplayer works; "Together" pending) |
-| **M5 — All categories** | Every category functional end-to-end | ⏳ Phase 7 |
+| **M5 — All categories** | Every category functional end-to-end | ✅ Phase 7 |
 | **M6 — v1.0.0** | Config, commands, localization, CI, Modrinth page | ⏳ Phase 8 |
 
 ---
